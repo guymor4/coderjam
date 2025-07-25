@@ -2,6 +2,7 @@ import './App.css';
 import { Editor } from '@monaco-editor/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { editor } from 'monaco-editor';
+import { KeyCode, KeyMod } from 'monaco-editor';
 import { RUNNERS, type OutputEntry } from './runners/runner';
 import { Button } from './components/Button';
 import { Select } from './components/Select';
@@ -55,6 +56,32 @@ function App() {
     const OnClearOutput = useCallback(() => {
         setOutput(CLEAN_OUTPUT);
     }, []);
+
+    // Handle initial editor setup
+    useEffect(() => {
+        if (!editorRef.current) {
+            return;
+        }
+
+        editorRef.current.addAction({
+            id: 'clear-output',
+            label: 'Clear Output',
+            run: () => {
+                setOutput(CLEAN_OUTPUT);
+            },
+            contextMenuGroupId: 'navigation',
+            contextMenuOrder: 1,
+        });
+        editorRef.current.addAction({
+            id: 'run-code',
+            label: 'Run Code',
+            keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
+            run: onRunClick,
+            contextMenuGroupId: 'navigation',
+            contextMenuOrder: 2,
+        });
+        console.log('added actions to editor');
+    }, [onRunClick]);
 
     return (
         <div className="flex w-screen h-screen bg-gray-100">

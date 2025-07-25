@@ -570,3 +570,4 @@ fabric.properties
 !/gradle/wrapper/gradle-wrapper.jar
 
 public/pyodide
+.yarn

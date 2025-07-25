@@ -56,6 +56,7 @@ type Process = {
     kill: (signal?: string) => void;
 };
 
+const GO_WASM_URL = `/go.wasm`;
 const WASM_EXEC_PATH = './wasm_exec.js'; // Path to the Go WASM exec JS file
 const USER_CODE_FILENAME = '/userCode.go'; // Must be in root directory
 const O_CREAT = 0x40; // Create file if it does not exist
@@ -96,7 +97,6 @@ async function getGo(): Promise<Go> {
     const goJsWrapper = new window.Go();
     // Load Go WASM module
     // It will be loaded to the global `window` object
-    const GO_WASM_URL = `/go.wasm`;
     cmd = await WebAssembly.instantiateStreaming(fetch(GO_WASM_URL), goJsWrapper.importObject);
     goJsWrapper.env = {
         // GOMODCACHE: '/home/me/.cache/go-mod',
@@ -125,14 +125,14 @@ async function getGo(): Promise<Go> {
     // await singletonGo.hackpad.overlayIndexedDB('/home/me/.cache', { cache: true });
 
     console.log('Creating /usr/local/go directory...');
-    await singletonGo.fs.mkdirSync('/usr/local/go', { recursive: true, mode: 0o700 });
+    await singletonGo.fs.mkdirSync('/usr/local/go', {
+        recursive: true,
+        mode: 0o700,
+    });
 
     await singletonGo.hackpad.overlayTarGzip('/usr/local/go', '/go.gzip', {
         persist: true,
         skipCacheDirs: ['/usr/local/go/pkg/mod', '/usr/local/go/pkg/tool/js_wasm'],
-        progress: (percentage: number) => {
-            console.log(`Go overlay progress: ${percentage}%`);
-        },
     });
     console.log('Done setting up Go environment.');
 

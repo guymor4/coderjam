@@ -4,7 +4,7 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
-import prettier from 'eslint-plugin-prettier'; // ✅
+import prettier from 'eslint-plugin-prettier';
 
 import { globalIgnores } from 'eslint/config';
 
@@ -13,11 +13,11 @@ export default tseslint.config([
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
-      prettier, // ✅ register plugin
+      prettier,
     },
     rules: {
-      'prettier/prettier': 'error', // ✅ enforce Prettier
-      'react-hooks/exhaustive-deps': 'warn', // ✅ warn on missing dependencies in hooks
+      'prettier/prettier': 'error', // enforce Prettier
+      'react-hooks/exhaustive-deps': 'warn', // warn on missing dependencies in hooks
     },
     languageOptions: {
       ecmaVersion: 2020,
