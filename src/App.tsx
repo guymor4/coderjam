@@ -1,20 +1,36 @@
 import './App.css';
-import { Editor } from '@monaco-editor/react';
+import { Editor, type Monaco } from '@monaco-editor/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { editor } from 'monaco-editor';
 import { KeyCode, KeyMod } from 'monaco-editor';
-import { RUNNERS, type OutputEntry } from './runners/runner';
+import { type OutputEntry, RUNNERS } from './runners/runner';
 import { Button } from './components/Button';
 import { Select } from './components/Select';
+import { capitalize, SUPPORTED_LANGUAGES, type Language } from './common';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
 ];
 const CLEAN_OUTPUT: OutputEntry[] = [{ type: 'log', text: 'Output cleared.' }];
-const INITIAL_LANGUAGE: Language = 'javascript';
-const SUPPORTED_LANGUAGES: Language[] = Object.keys(RUNNERS);
 
-type Language = keyof typeof RUNNERS;
+export const INITIAL_LANGUAGE: Language = 'javascript';
+
+const CUSTOM_THEME: editor.IStandaloneThemeData = {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+        'editor.background': '#1a202c',
+        'editor.foreground': '#d1d5db',
+        'editorLineNumber.foreground': '#6b7280',
+        'editorLineNumber.activeForeground': '#9ca3af',
+        'editor.selectionBackground': '#374151',
+        'editor.selectionHighlightBackground': '#2d3748',
+        'editorCursor.foreground': '#d1d5db',
+        'editor.lineHighlightBackground': '#1f2937',
+        'editorGutter.background': '#1a202c',
+    },
+};
 
 function App() {
     const editorRef = useRef<editor.IStandaloneCodeEditor>(null);
@@ -57,6 +73,18 @@ function App() {
         setOutput(CLEAN_OUTPUT);
     }, []);
 
+    // Handle Monaco editor theme setup
+    const handleEditorDidMount = useCallback(
+        (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+            editorRef.current = editor;
+
+            // Define custom theme
+            monaco.editor.defineTheme('livecode-dark', CUSTOM_THEME);
+            monaco.editor.setTheme('livecode-dark');
+        },
+        []
+    );
+
     // Handle initial editor setup
     useEffect(() => {
         if (!editorRef.current) {
@@ -84,58 +112,84 @@ function App() {
     }, [onRunClick]);
 
     return (
-        <div className="flex w-screen h-screen bg-gray-100">
-            <div className="flex-1 flex flex-col p-4">
-                <div className="flex items-center justify-between py-4">
-                    <div className="flex items-center gap-3 justify-between flex-1">
+        <div className="flex w-screen h-screen bg-dark-950 text-dark-100">
+            <div className="flex-1 flex flex-col">
+                <div className="flex items-center justify-between px-6 py-4 bg-dark-800 border-b border-dark-600">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-xl font-semibold text-dark-50">LiveCode</h1>
                         <Select
                             value={language}
                             onChange={setLanguage}
+                            className="capitalize"
                             options={SUPPORTED_LANGUAGES.map((lang) => ({
                                 value: lang,
-                                label: lang,
+                                label: capitalize(lang),
                             }))}
                         />
-                        {isReady ? (
-                            <Button colorType="green" onClick={onRunClick}>
-                                <svg
-                                    className="w-4 h-4 mr-2"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
-                                Run code
-                            </Button>
-                        ) : (
-                            <Button disabled colorType="default">
-                                Running...
-                            </Button>
-                        )}
                     </div>
+                    {isReady ? (
+                        <Button colorType="green" onClick={onRunClick}>
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                            Run Code
+                        </Button>
+                    ) : (
+                        <Button disabled colorType="default">
+                            <svg
+                                className="w-4 h-4 mr-2 animate-spin"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                ></circle>
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                            Running...
+                        </Button>
+                    )}
                 </div>
-                <div className="flex-auto grow">
+                <div className="flex-1 bg-dark-800">
                     <Editor
-                        onMount={(editor) => (editorRef.current = editor)}
-                        theme="vs-dark"
+                        onMount={handleEditorDidMount}
+                        theme="livecode-dark"
                         language={language}
                         defaultValue="console.log('Hello World!');"
                         options={{
                             automaticLayout: true,
-                            fontSize: 16,
-                            lineHeight: 24,
+                            fontSize: 14,
+                            lineHeight: 20,
+                            fontFamily: 'JetBrains Mono, Monaco, Cascadia Code, monospace',
                             scrollbar: {
                                 vertical: 'auto',
                                 alwaysConsumeMouseWheel: false,
                             },
                             scrollBeyondLastLine: false,
+                            minimap: { enabled: false },
+                            lineNumbers: 'on',
+                            renderLineHighlight: 'gutter',
+                            selectOnLineNumbers: true,
+                            roundedSelection: false,
+                            cursorStyle: 'line',
+                            cursorWidth: 2,
+                            wordWrap: 'off',
                         }}
                     />
                 </div>
             </div>
-            <div className="flex-1 flex flex-col gap-2 p-4 pr-0 border-l border-gray-300">
-                <div className="flex justify-between pr-2">
-                    <h2 className="text-lg font-semibold">Output</h2>
+            <div className="flex-1 flex flex-col bg-dark-800 border-l border-dark-600">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
+                    <h2 className="text-lg font-semibold text-dark-50">Output</h2>
                     <Button variant="outline" onClick={OnClearOutput}>
                         <svg
                             className="w-4 h-4 mr-2"
@@ -153,9 +207,14 @@ function App() {
                         Clear
                     </Button>
                 </div>
-                <div className="p-4 bg-gray-200 text-gray-700 grow overflow-y-auto font-mono">
-                    {output?.map((entry) => (
-                        <div className={entry.type === 'error' ? 'text-red-700' : 'text-gray-700'}>
+                <div className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm">
+                    {output?.map((entry, index) => (
+                        <div
+                            key={index}
+                            className={`mb-1 ${
+                                entry.type === 'error' ? 'text-red-400' : 'text-dark-100'
+                            }`}
+                        >
                             {entry.text}
                         </div>
                     ))}
