@@ -8,6 +8,17 @@ import { Button } from './components/Button';
 import { Select } from './components/Select';
 import { capitalize, SUPPORTED_LANGUAGES, type Language } from './common';
 
+// Function to get language icon
+const getLanguageIcon = (language: Language) => {
+    return (
+        <img 
+            src={`/icons/${language}.svg`} 
+            alt={`${language} icon`} 
+            className="w-4 h-4"
+        />
+    );
+};
+
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
 ];
@@ -79,8 +90,8 @@ function App() {
             editorRef.current = editor;
 
             // Define custom theme
-            monaco.editor.defineTheme('livecode-dark', CUSTOM_THEME);
-            monaco.editor.setTheme('livecode-dark');
+            monaco.editor.defineTheme('coderjam-dark', CUSTOM_THEME);
+            monaco.editor.setTheme('coderjam-dark');
         },
         []
     );
@@ -116,7 +127,7 @@ function App() {
             <div className="flex-1 flex flex-col">
                 <div className="flex items-center justify-between px-6 py-4 bg-dark-800 border-b border-dark-600">
                     <div className="flex items-center gap-4">
-                        <h1 className="text-xl font-semibold text-dark-50">LiveCode</h1>
+                        <h1 className="text-xl font-semibold text-dark-50">CoderJam</h1>
                         <Select
                             value={language}
                             onChange={setLanguage}
@@ -124,6 +135,7 @@ function App() {
                             options={SUPPORTED_LANGUAGES.map((lang) => ({
                                 value: lang,
                                 label: capitalize(lang),
+                                icon: getLanguageIcon(lang),
                             }))}
                         />
                     </div>
@@ -162,7 +174,7 @@ function App() {
                 <div className="flex-1 bg-dark-800">
                     <Editor
                         onMount={handleEditorDidMount}
-                        theme="livecode-dark"
+                        theme="coderjam-dark"
                         language={language}
                         defaultValue="console.log('Hello World!');"
                         options={{

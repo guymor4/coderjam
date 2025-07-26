@@ -4,6 +4,7 @@ import { Button } from './Button';
 interface SelectOption {
     value: string;
     label: string;
+    icon?: React.ReactNode;
 }
 
 interface SelectProps {
@@ -50,7 +51,10 @@ export const Select: React.FC<SelectProps> = ({
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full justify-between min-w-[140px]"
             >
-                <span>{selectedOption?.label || placeholder}</span>
+                <span className="flex items-center gap-2">
+                    {selectedOption?.icon}
+                    {selectedOption?.label || placeholder}
+                </span>
                 <svg
                     className={`w-4 h-4 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                     fill="none"
@@ -78,7 +82,10 @@ export const Select: React.FC<SelectProps> = ({
                                     : 'text-dark-100 hover:bg-dark-600 hover:text-dark-50'
                             }`}
                         >
-                            {option.label}
+                            <span className="flex items-center gap-2">
+                                {option.icon}
+                                {option.label}
+                            </span>
                         </button>
                     ))}
                 </div>

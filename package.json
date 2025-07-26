@@ -1,25 +1,25 @@
 {
-    "name": "livecode-monorepo",
+    "name": "coderjam-monorepo",
     "private": true,
     "version": "1.0.0",
-    "description": "LiveCode - A web playground that runs code in the browser using WebAssembly",
+    "description": "CoderJam - A web playground that runs code in the browser using WebAssembly",
     "workspaces": [
         "frontend",
         "backend"
     ],
     "scripts": {
         "dev": "concurrently \"yarn dev:backend\" \"yarn dev:frontend\"",
-        "dev:frontend": "yarn workspace livecode-frontend dev",
-        "dev:backend": "yarn workspace livecode-backend dev",
+        "dev:frontend": "yarn workspace coderjam-frontend dev",
+        "dev:backend": "yarn workspace coderjam-backend dev",
         "build": "yarn build:frontend && yarn build:backend",
-        "build:frontend": "yarn workspace livecode-frontend build",
-        "build:backend": "yarn workspace livecode-backend build",
-        "start": "yarn workspace livecode-backend start",
+        "build:frontend": "yarn workspace coderjam-frontend build",
+        "build:backend": "yarn workspace coderjam-backend build",
+        "start": "yarn workspace coderjam-backend start",
         "lint": "yarn lint:frontend && yarn lint:backend",
-        "lint:frontend": "yarn workspace livecode-frontend lint",
-        "lint:backend": "yarn workspace livecode-backend lint",
-        "clean": "yarn workspace livecode-frontend clean && yarn workspace livecode-backend clean",
-        "type-check": "yarn workspace livecode-frontend type-check && yarn workspace livecode-backend type-check"
+        "lint:frontend": "yarn workspace coderjam-frontend lint",
+        "lint:backend": "yarn workspace coderjam-backend lint",
+        "clean": "yarn workspace coderjam-frontend clean && yarn workspace coderjam-backend clean",
+        "type-check": "yarn workspace coderjam-frontend type-check && yarn workspace coderjam-backend type-check"
     },
     "devDependencies": {
         "concurrently": "^9.1.0"

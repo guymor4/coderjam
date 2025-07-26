@@ -1,4 +1,4 @@
-# LiveCode
+# CoderJam
 A modern web playground that allows you to run code in different programming languages directly in your browser.
 Every language runs in its own isolated wasm environment, ensuring security and performance.
 
