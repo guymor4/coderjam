@@ -65,7 +65,6 @@ async function runCode(code: string): Promise<RunResult> {
 
     if (result.error) {
         const error: Error = vm.dump(result.error);
-
         console.error(`${error.name}: ${error.message}`, error);
         result.error.dispose();
 

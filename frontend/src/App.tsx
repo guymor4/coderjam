@@ -6,18 +6,7 @@ import { KeyCode, KeyMod } from 'monaco-editor';
 import { type OutputEntry, RUNNERS } from './runners/runner';
 import { Button } from './components/Button';
 import { Select } from './components/Select';
-import { capitalize, SUPPORTED_LANGUAGES, type Language } from './common';
-
-// Function to get language icon
-const getLanguageIcon = (language: Language) => {
-    return (
-        <img 
-            src={`/icons/${language}.svg`} 
-            alt={`${language} icon`} 
-            className="w-4 h-4"
-        />
-    );
-};
+import { capitalize, type Language, SUPPORTED_LANGUAGES } from './common';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -92,35 +81,28 @@ function App() {
             // Define custom theme
             monaco.editor.defineTheme('coderjam-dark', CUSTOM_THEME);
             monaco.editor.setTheme('coderjam-dark');
+
+            // Add custom actions
+            editor.addAction({
+                id: 'clear-output',
+                label: 'Clear Output',
+                run: () => {
+                    setOutput(CLEAN_OUTPUT);
+                },
+                contextMenuGroupId: 'navigation',
+                contextMenuOrder: 1,
+            });
+            editor.addAction({
+                id: 'run-code',
+                label: 'Run Code',
+                keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
+                run: onRunClick,
+                contextMenuGroupId: 'navigation',
+                contextMenuOrder: 2,
+            });
         },
-        []
+        [onRunClick]
     );
-
-    // Handle initial editor setup
-    useEffect(() => {
-        if (!editorRef.current) {
-            return;
-        }
-
-        editorRef.current.addAction({
-            id: 'clear-output',
-            label: 'Clear Output',
-            run: () => {
-                setOutput(CLEAN_OUTPUT);
-            },
-            contextMenuGroupId: 'navigation',
-            contextMenuOrder: 1,
-        });
-        editorRef.current.addAction({
-            id: 'run-code',
-            label: 'Run Code',
-            keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
-            run: onRunClick,
-            contextMenuGroupId: 'navigation',
-            contextMenuOrder: 2,
-        });
-        console.log('added actions to editor');
-    }, [onRunClick]);
 
     return (
         <div className="flex w-screen h-screen bg-dark-950 text-dark-100">
@@ -135,7 +117,13 @@ function App() {
                             options={SUPPORTED_LANGUAGES.map((lang) => ({
                                 value: lang,
                                 label: capitalize(lang),
-                                icon: getLanguageIcon(lang),
+                                icon: (
+                                    <img
+                                        src={`/icons/${lang}.svg`}
+                                        alt={`${lang} icon`}
+                                        className="w-4 h-4"
+                                    />
+                                ),
                             }))}
                         />
                     </div>
