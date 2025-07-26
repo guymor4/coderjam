@@ -1,13 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-
-function createNewPad() {
-    // Creates a new pad ID short 6 digits long
-    const padId = Math.random().toString(36).substring(2, 8);
-    console.log(`Created new pad with ID: ${padId}`);
-    return padId;
-}
+import { createPad, getPad, updatePad } from './padService';
 
 export function setupRoutes(app: express.Application) {
     const VITE_DEV_SERVER = process.env.VITE_DEV_SERVER || 'http://localhost:5173';
@@ -23,15 +17,57 @@ export function setupRoutes(app: express.Application) {
         });
     });
 
-    // API routes would go here
-    app.use('/api', (req, res) => {
-        res.status(404).json({ error: 'API endpoint not found' });
+    // -------------- API routes --------------
+
+    // Create a new pad
+    app.post('/api/pad', async (_req, res) => {
+        try {
+            const newPadId = await createPad();
+            res.json({
+                id: newPadId,
+            });
+        } catch (error) {
+            console.error('Error creating pad:', error);
+            res.status(500).json({ error: 'Failed to create pad' });
+        }
     });
 
-    // Create a new pad for new visit
-    app.get('/', (req, res, next) => {
-        const newPadId = createNewPad();
-        res.redirect(`/p/${newPadId}`);
+    app.get('/api/pad/:id', async (req, res) => {
+        try {
+            const pad = await getPad(req.params.id);
+            if (!pad) {
+                res.status(404).json({ error: `Pad '${req.params.id}' not found`});
+                return;
+            }
+            res.json(pad);
+        } catch (error) {
+            console.error('Error getting pad:', error);
+            res.status(500).json({ error: 'Failed to get pad' });
+        }
+    });
+
+    app.put('/api/pad/:id', async (req, res) => {
+        try {
+            const { language, code } = req.body;
+            if (!language) {
+                res.status(400).json({ error: 'Language is required' });
+                return;
+            }
+            const pad = await updatePad(req.params.id, language, code || '');
+            if (!pad) {
+                res.status(404).json({ error: 'Pad not found' });
+                return;
+            }
+            res.json(pad);
+        } catch (error) {
+            console.error('Error updating pad:', error);
+            res.status(500).json({ error: 'Failed to update pad' });
+        }
+    });
+
+    // Catch-all for unmatched API routes
+    app.use('/api', (req, res) => {
+        res.status(404).json({ error: 'API endpoint not found' });
     });
 
     if (isDevelopment) {

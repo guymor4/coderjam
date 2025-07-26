@@ -16,7 +16,9 @@
         "@monaco-editor/react": "^4.7.0",
         "quickjs-emscripten": "^0.31.0",
         "react": "^19.1.0",
-        "react-dom": "^19.1.0"
+        "react-dom": "^19.1.0",
+        "react-router-dom": "^7.1.0",
+        "use-debounce": "^10.0.5"
     },
     "devDependencies": {
         "@eslint/js": "^9.30.1",
