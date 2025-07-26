@@ -14,6 +14,7 @@ Every language runs in its own isolated wasm environment, ensuring security and 
 
 - Node.js (v18 or higher)
 - Yarn (v1.22 or higher)
+- Docker and Docker Compose (for PostgreSQL database)
 
 ### Installation
 1. Clone the repository:
@@ -21,17 +22,32 @@ Every language runs in its own isolated wasm environment, ensuring security and 
 git clone <your-repo-url>
 cd coderjam
 ```
-2. Install all dependencies:
+
+2. Start the PostgreSQL database:
+```bash
+docker-compose up -d
+```
+
+3. Install all dependencies:
 ```bash
 yarn install
 ```
 
 ### Development
 To run both frontend and backend in development mode:
+
+1. Make sure PostgreSQL is running:
+```bash
+docker-compose up -d
+```
+
+2. Start the development servers:
 ```bash
 yarn dev
 ```
+
 This will start:
+- PostgreSQL database on `localhost:5432`
 - Frontend (Vite) dev server on `http://localhost:5173`  
 - Backend server on `http://localhost:3001`
 - **Access your app at `http://localhost:3001`** (backend proxies to frontend)
