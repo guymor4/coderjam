@@ -1,13 +1,11 @@
 import { Navigate, useParams } from 'react-router-dom';
 import { PadEditor } from './components/PadEditor';
 import { useCallback, useEffect, useState } from 'react';
-import type { Pad } from './types/api';
-import { getPad, updatePad } from './lib/api';
-import { useDebounce } from 'use-debounce';
 import { type OutputEntry, RUNNERS } from './runners/runner';
 import { Select } from './components/Select';
-import { capitalize, SUPPORTED_LANGUAGES } from './common';
 import { Button } from './components/Button';
+import { useCollaboration } from './hooks/useCollaboration';
+import { capitalize, type PadState, SUPPORTED_LANGUAGES } from './types/common';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -16,59 +14,39 @@ const CLEAN_OUTPUT: OutputEntry[] = [{ type: 'log', text: 'Output cleared.' }];
 
 export function PadPage() {
     const { padId } = useParams<{ padId: string }>();
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<Error | undefined>(undefined);
-    const [pad, setPad] = useState<Pad | undefined>(undefined);
-    const [debouncedPad] = useDebounce(pad, 100, {
-        maxWait: 500,
-    });
+    const [isLoading] = useState<boolean>(false);
+    const [error] = useState<Error | undefined>(undefined);
+    const [pad, setPad] = useState<PadState | undefined>(undefined);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
     const [isReady, setIsReady] = useState<boolean>(false);
     const [output, setOutput] = useState<OutputEntry[]>(INITIAL_OUTPUT);
 
-    // Load pad data from API
+    // Setup collaboration hook
+    const collaboration = useCollaboration({
+        onUserJoined: (user) => {
+            console.log('User joined via hook:', user);
+        },
+        onUserLeft: (user) => {
+            console.log('User left via hook:', user);
+        },
+        onPadStateUpdated: (data) => {
+            console.log('Received pad state via hook:', data);
+            setPad(data);
+        },
+        onError: (error) => {
+            console.error('Collaboration error:', error);
+        },
+    });
+
+    // Join pad room when padId changes
     useEffect(() => {
-        if (!padId) {
-            setError(new Error('Pad ID is required'));
-            setIsLoading(false);
+        if (!padId || !collaboration.isConnected) {
             return;
         }
 
-        const loadPad = async () => {
-            try {
-                setIsLoading(true);
-                setError(undefined);
-
-                const pad: Pad = await getPad(padId);
-                setPad(pad);
-            } catch (err) {
-                setError(err as Error);
-                console.error('Error loading pad:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadPad();
-    }, [padId]);
-
-    // Save pad data to API when debouncedPad changes
-    useEffect(() => {
-        if (!debouncedPad) {
-            return;
-        }
-
-        const doUpdatePad = async () => {
-            try {
-                await updatePad(debouncedPad.id, debouncedPad.language, debouncedPad.code);
-                console.log('Pad saved:', debouncedPad);
-            } catch (err) {
-                console.error('Error saving debouncedPad:', err);
-            }
-        };
-
-        doUpdatePad();
-    }, [debouncedPad]);
+        collaboration.joinPad(padId, 'User');
+        return () => collaboration.leavePad();
+    }, [padId, collaboration.isConnected, collaboration]);
 
     // Handle runner initialization on language change
     useEffect(() => {
@@ -101,28 +79,51 @@ export function PadPage() {
         }
     }, [currentRunner, pad]);
 
-    const handleCodeChange = useCallback((newCode: string) => {
-        setPad((prevPad) =>
-            prevPad
-                ? {
-                      ...prevPad,
-                      code: newCode,
-                  }
-                : undefined
-        );
-    }, []);
+    const handleCodeChange = useCallback(
+        (newCode: string) => {
+            if (!pad) {
+                return;
+            }
 
-    const handleLanguageChange = useCallback((newLanguage: string) => {
-        setPad((prevPad) =>
-            prevPad
-                ? {
-                      ...prevPad,
-                      language: newLanguage,
-                      code: RUNNERS[newLanguage]?.codeSample || '',
-                  }
-                : undefined
-        );
-    }, []);
+            collaboration.sendPadStateUpdate({
+                padId: pad.padId,
+                code: newCode,
+            });
+            setPad((prevPad) =>
+                prevPad
+                    ? {
+                          ...prevPad,
+                          code: newCode,
+                      }
+                    : undefined
+            );
+        },
+        [collaboration, pad]
+    );
+
+    const handleLanguageChange = useCallback(
+        (newLanguage: string) => {
+            if (!pad) {
+                return;
+            }
+
+            collaboration.sendPadStateUpdate({
+                padId: pad.padId,
+                language: newLanguage,
+                code: RUNNERS[newLanguage]?.codeSample || '',
+            });
+            setPad((prevPad) =>
+                prevPad
+                    ? {
+                          ...prevPad,
+                          language: newLanguage,
+                          code: RUNNERS[newLanguage]?.codeSample || '',
+                      }
+                    : undefined
+            );
+        },
+        [collaboration, pad]
+    );
 
     const onClearOutput = useCallback(() => {
         setOutput(CLEAN_OUTPUT);
@@ -150,6 +151,16 @@ export function PadPage() {
         );
     }
 
+    if (collaboration.error) {
+        return (
+            <div className="flex w-screen h-screen bg-dark-950 text-dark-100 items-center justify-center">
+                <div className="text-lg text-red-400">
+                    Collaboration Error: {collaboration.error}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex w-screen h-screen bg-dark-950 text-dark-100">
             <div className="flex-1 flex flex-col">
@@ -157,6 +168,30 @@ export function PadPage() {
                     <div className="flex items-center gap-4">
                         <h1 className="text-xl font-semibold text-dark-50">CoderJam</h1>
                         <div className="text-sm text-dark-300">{padId}</div>
+                        {collaboration.users.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-dark-300">
+                                    {collaboration.users.length} collaborator
+                                    {collaboration.users.length > 1 ? 's' : ''}
+                                </span>
+                                <div className="flex gap-1">
+                                    {collaboration.users.slice(0, 3).map((user) => (
+                                        <div
+                                            key={user.id}
+                                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white bg-blue-500"
+                                            title={user.name}
+                                        >
+                                            {user.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    ))}
+                                    {collaboration.users.length > 3 && (
+                                        <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
+                                            +{collaboration.users.length - 3}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         <Select
                             value={pad.language || 'javascript'}
                             onChange={handleLanguageChange}

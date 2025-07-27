@@ -1,4 +1,5 @@
-import type { OutputEntry, RunResult } from './runner';
+import type { OutputEntry } from './runner';
+import type { RunResult } from './runner';
 
 type Go = {
     childProcess: GoChildProcess;

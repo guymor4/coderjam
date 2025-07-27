@@ -2,7 +2,7 @@ import { Editor, type Monaco } from '@monaco-editor/react';
 import { useCallback, useRef } from 'react';
 import type { editor } from 'monaco-editor';
 import { KeyCode, KeyMod } from 'monaco-editor';
-import { type Language } from '../common';
+import type { Language } from '../types/common';
 
 const CUSTOM_THEME: editor.IStandaloneThemeData = {
     base: 'vs-dark',

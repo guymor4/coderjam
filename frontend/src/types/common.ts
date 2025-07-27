@@ -1,5 +1,7 @@
-import { RUNNERS } from './runners/runner';
+import { RUNNERS } from '../runners/runner';
+import type { PadRoom } from '../../../backend/src/types';
 
+export type PadState = PadRoom;
 export type Language = keyof typeof RUNNERS;
 export const SUPPORTED_LANGUAGES: Language[] = Object.keys(RUNNERS);
 

@@ -1,6 +1,6 @@
-import type { RunResult } from './runner';
 import JavascriptRunner from './javascript-runner';
 import type TS from 'typescript';
+import type { RunResult } from './runner';
 
 type Typescript = typeof TS;
 

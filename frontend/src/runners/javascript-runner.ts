@@ -1,6 +1,7 @@
 import { type JSModuleLoadResult, QuickJSContext, QuickJSWASMModule } from 'quickjs-emscripten';
 import { newQuickJSWASMModuleFromVariant, newVariant, RELEASE_SYNC } from 'quickjs-emscripten';
 import wasmLocation from '@jitl/quickjs-wasmfile-release-sync/wasm?url';
+
 import type { RunResult } from './runner';
 
 const CODE_SAMPLE = `\
