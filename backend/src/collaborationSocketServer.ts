@@ -36,11 +36,6 @@ export function setupSocketServer(httpServer: HTTPServer) {
                     return;
                 }
 
-                // Leave any existing rooms
-                for (const room of socket.rooms) {
-                    socket.leave(room);
-                }
-
                 // Join the pad room
                 socket.join(padId);
 
@@ -50,7 +45,7 @@ export function setupSocketServer(httpServer: HTTPServer) {
                         padId,
                         code: pad.code,
                         language: pad.language,
-                        users: new Map(),
+                        users: [],
                     });
                 }
                 const room = padRoomsById.get(padId)!;
@@ -61,7 +56,14 @@ export function setupSocketServer(httpServer: HTTPServer) {
                 };
 
                 // Add user to the room
-                room.users.set(socket.id, user);
+                const existingUser = room.users.find(u => u.id === socket.id);
+                if (existingUser) {
+                    // User already exists, update name
+                    existingUser.name = userName;
+                } else {
+                    // New user, add to room
+                    room.users.push(user);
+                }
 
                 // Send the pad state to the joining user only if they are not the creator
                 socket.emit('pad_state_updated', {
@@ -70,9 +72,6 @@ export function setupSocketServer(httpServer: HTTPServer) {
                     language: pad.language,
                     users: room.users,
                 } as PadStateUpdated);
-
-                // Notify other users in the room
-                socket.to(padId).emit('user_joined', user);
 
                 console.log(`User ${socket.id} (${userName}) joined pad ${padId}`);
             } catch (error) {
@@ -85,18 +84,22 @@ export function setupSocketServer(httpServer: HTTPServer) {
             'pad_state_update',
             async ({ padId, code, cursor, language }: PadStateUpdate) => {
                 const room = padRoomsById.get(padId);
+                if (!room) {
+                    console.warn(`Pad room not found for padId: ${padId}`);
+                    return;
+                }
 
-                if (!room || !room.users.has(socket.id)) {
+                const userIndex = room?.users.findIndex(u => u.id === socket.id);
+                if (userIndex === -1) {
+                    console.warn(`User ${socket.id} not found in pad room ${padId}`);
                     return;
                 }
 
                 try {
-                    let newUsers: Map<string, User> | undefined = undefined;
+                    let newUsers: User[] = [ ...room.users ];
                     // Update user cursor position
                     if (cursor) {
-                        newUsers = new Map(room.users);
-                        const user = newUsers.get(socket.id)!;
-                        user.cursor = cursor;
+                        newUsers[userIndex]!.cursor = cursor;
                     }
 
                     // Update room state
@@ -128,15 +131,17 @@ export function setupSocketServer(httpServer: HTTPServer) {
 
             // Remove user from all pad rooms
             for (const [padId, room] of padRoomsById.entries()) {
-                if (room.users.has(socket.id)) {
-                    const user = room.users.get(socket.id)!;
-                    room.users.delete(socket.id);
+                const userIndex = room.users.findIndex(u => u.id === socket.id)
+                if (userIndex >= 0) {
+                    const user = room.users[userIndex]!;
+                    // Remove user from the room
+                    room.users.splice(userIndex, 1);
 
                     // Notify other users
                     socket.to(padId).emit('user_left', { userId: socket.id, user });
 
                     // Clean up empty rooms
-                    if (room.users.size === 0) {
+                    if (room.users.length === 0) {
                         padRoomsById.delete(padId);
                     }
 

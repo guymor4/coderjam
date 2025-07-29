@@ -22,16 +22,34 @@ export function PadPage() {
     const [output, setOutput] = useState<OutputEntry[]>(INITIAL_OUTPUT);
 
     // Setup collaboration hook
-    const collaboration = useCollaboration({
-        onUserJoined: (user) => {
-            console.log('User joined via hook:', user);
-        },
+    const {
+        isConnected,
+        joinPad,
+        leavePad,
+        sendPadStateUpdate,
+        error: collaborationError,
+        users,
+    } = useCollaboration({
         onUserLeft: (user) => {
             console.log('User left via hook:', user);
         },
         onPadStateUpdated: (data) => {
             console.log('Received pad state via hook:', data);
-            setPad(data);
+            console.assert(data.users?.length > 0, 'Users field should not be empty');
+            console.assert(
+                !data.language || SUPPORTED_LANGUAGES.includes(data.language),
+                "Language '" +
+                    data.language +
+                    "' should be one of: " +
+                    SUPPORTED_LANGUAGES.join(', ')
+            );
+            setPad((prevPad) => ({
+                ...(prevPad ?? {}),
+                padId: data.padId ?? prevPad?.padId,
+                code: data.code ?? prevPad?.code,
+                language: data.language ?? prevPad?.language,
+                users: data.users ?? prevPad?.users,
+            }));
         },
         onError: (error) => {
             console.error('Collaboration error:', error);
@@ -40,13 +58,13 @@ export function PadPage() {
 
     // Join pad room when padId changes
     useEffect(() => {
-        if (!padId || !collaboration.isConnected) {
+        if (!padId || !isConnected) {
             return;
         }
 
-        collaboration.joinPad(padId, 'User');
-        return () => collaboration.leavePad();
-    }, [padId, collaboration.isConnected, collaboration]);
+        joinPad(padId, 'User');
+        return () => leavePad();
+    }, [padId, isConnected, joinPad, leavePad]);
 
     // Handle runner initialization on language change
     useEffect(() => {
@@ -66,6 +84,7 @@ export function PadPage() {
     }, [currentRunner]);
 
     const onRunClick = useCallback(async () => {
+        console.log('Running code:', pad, currentRunner);
         if (!currentRunner || !pad) {
             return;
         }
@@ -85,7 +104,7 @@ export function PadPage() {
                 return;
             }
 
-            collaboration.sendPadStateUpdate({
+            sendPadStateUpdate({
                 padId: pad.padId,
                 code: newCode,
             });
@@ -98,7 +117,7 @@ export function PadPage() {
                     : undefined
             );
         },
-        [collaboration, pad]
+        [sendPadStateUpdate, pad]
     );
 
     const handleLanguageChange = useCallback(
@@ -107,7 +126,7 @@ export function PadPage() {
                 return;
             }
 
-            collaboration.sendPadStateUpdate({
+            sendPadStateUpdate({
                 padId: pad.padId,
                 language: newLanguage,
                 code: RUNNERS[newLanguage]?.codeSample || '',
@@ -122,7 +141,7 @@ export function PadPage() {
                     : undefined
             );
         },
-        [collaboration, pad]
+        [sendPadStateUpdate, pad]
     );
 
     const onClearOutput = useCallback(() => {
@@ -151,137 +170,143 @@ export function PadPage() {
         );
     }
 
-    if (collaboration.error) {
+    if (collaborationError) {
         return (
             <div className="flex w-screen h-screen bg-dark-950 text-dark-100 items-center justify-center">
-                <div className="text-lg text-red-400">
-                    Collaboration Error: {collaboration.error}
-                </div>
+                <div className="text-lg text-red-400">Collaboration Error: {error}</div>
             </div>
         );
     }
 
     return (
-        <div className="flex w-screen h-screen bg-dark-950 text-dark-100">
-            <div className="flex-1 flex flex-col">
-                <div className="flex items-center justify-between px-6 py-4 bg-dark-800 border-b border-dark-600">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-xl font-semibold text-dark-50">CoderJam</h1>
-                        <div className="text-sm text-dark-300">{padId}</div>
-                        {collaboration.users.length > 0 && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-dark-300">
-                                    {collaboration.users.length} collaborator
-                                    {collaboration.users.length > 1 ? 's' : ''}
-                                </span>
-                                <div className="flex gap-1">
-                                    {collaboration.users.slice(0, 3).map((user) => (
-                                        <div
-                                            key={user.id}
-                                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white bg-blue-500"
-                                            title={user.name}
-                                        >
-                                            {user.name.charAt(0).toUpperCase()}
-                                        </div>
-                                    ))}
-                                    {collaboration.users.length > 3 && (
-                                        <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
-                                            +{collaboration.users.length - 3}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+        <div className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100">
+            <div className="flex grow">
+                {/* Left side panel: Pad editor and controls */}
+                <div className="flex-1 flex flex-col">
+                    <div className="flex grow-0 items-center justify-between px-6 py-4 bg-dark-800 border-b border-dark-600">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-xl font-semibold text-dark-50">CoderJam</h1>
+                            <div className="text-sm text-dark-300">{padId}</div>
+                            <Select
+                                value={pad.language || 'javascript'}
+                                onChange={handleLanguageChange}
+                                className="capitalize"
+                                options={SUPPORTED_LANGUAGES.map((lang) => ({
+                                    value: lang,
+                                    label: capitalize(lang),
+                                    icon: (
+                                        <img
+                                            src={`/icons/${lang}.svg`}
+                                            alt={`${lang} icon`}
+                                            className="w-4 h-4"
+                                        />
+                                    ),
+                                }))}
+                            />
+                        </div>
+                        {isReady ? (
+                            <Button colorType="green" onClick={onRunClick}>
+                                <svg
+                                    className="w-4 h-4 mr-2"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                                Run Code
+                            </Button>
+                        ) : (
+                            <Button disabled colorType="default">
+                                <svg
+                                    className="w-4 h-4 mr-2 animate-spin"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                </svg>
+                                Running...
+                            </Button>
                         )}
-                        <Select
-                            value={pad.language || 'javascript'}
-                            onChange={handleLanguageChange}
-                            className="capitalize"
-                            options={SUPPORTED_LANGUAGES.map((lang) => ({
-                                value: lang,
-                                label: capitalize(lang),
-                                icon: (
-                                    <img
-                                        src={`/icons/${lang}.svg`}
-                                        alt={`${lang} icon`}
-                                        className="w-4 h-4"
-                                    />
-                                ),
-                            }))}
+                    </div>
+                    <div className="flex-1 bg-dark-800">
+                        <PadEditor
+                            code={pad.code || ''}
+                            language={pad.language || 'javascript'}
+                            onCodeChange={handleCodeChange}
+                            onRunClick={onRunClick}
+                            onClearOutput={onClearOutput}
                         />
                     </div>
-                    {isReady ? (
-                        <Button colorType="green" onClick={onRunClick}>
-                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z" />
-                            </svg>
-                            Run Code
-                        </Button>
-                    ) : (
-                        <Button disabled colorType="default">
+                </div>
+                {/* Right side panel: Output display */}
+                <div className="flex-1 flex flex-col bg-dark-800 border-l border-dark-600">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
+                        <h2 className="text-lg font-semibold text-dark-50">Output</h2>
+                        <Button variant="outline" onClick={onClearOutput}>
                             <svg
-                                className="w-4 h-4 mr-2 animate-spin"
+                                className="w-4 h-4 mr-2"
                                 fill="none"
+                                stroke="currentColor"
                                 viewBox="0 0 24 24"
                             >
-                                <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                ></circle>
                                 <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
+                                />
                             </svg>
-                            Running...
+                            Clear
                         </Button>
-                    )}
-                </div>
-                <div className="flex-1 bg-dark-800">
-                    <PadEditor
-                        code={pad.code || ''}
-                        language={pad.language || 'javascript'}
-                        onCodeChange={handleCodeChange}
-                        onRunClick={onRunClick}
-                        onClearOutput={onClearOutput}
-                    />
+                    </div>
+                    <div className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm">
+                        {output?.map((entry, index) => (
+                            <div
+                                key={index}
+                                className={`mb-1 ${
+                                    entry.type === 'error' ? 'text-red-400' : 'text-dark-100'
+                                }`}
+                            >
+                                {entry.text}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
-            <div className="flex-1 flex flex-col bg-dark-800 border-l border-dark-600">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
-                    <h2 className="text-lg font-semibold text-dark-50">Output</h2>
-                    <Button variant="outline" onClick={onClearOutput}>
-                        <svg
-                            className="w-4 h-4 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
-                            />
-                        </svg>
-                        Clear
-                    </Button>
+            {/* Footer */}
+            <div className="flex grow-0 items-center justify-between px-6 py-3 bg-dark-800 border-t border-dark-600">
+                <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                        {users.slice(0, 10).map((user) => (
+                            <div className="flex items-center gap-2" key={user.id}>
+                                {/* TODO make this user color */}
+                                <div className="w-2 h-2 rounded-full flex items-center justify-center bg-blue-500"></div>
+                                <span className="text-sm text-dark-300">{user.name}</span>
+                            </div>
+                        ))}
+                        {users.length > 10 && (
+                            <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
+                                +{users.length - 3}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm">
-                    {output?.map((entry, index) => (
-                        <div
-                            key={index}
-                            className={`mb-1 ${
-                                entry.type === 'error' ? 'text-red-400' : 'text-dark-100'
-                            }`}
-                        >
-                            {entry.text}
-                        </div>
-                    ))}
+                <div>
+                    <span className="text-sm text-dark-300">
+                        {isConnected ? 'Connected' : 'Disconnected'}
+                    </span>
                 </div>
             </div>
         </div>

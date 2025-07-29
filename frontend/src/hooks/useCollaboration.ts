@@ -15,7 +15,6 @@ export interface CollaborationActions {
 }
 
 export interface CollaborationCallbacks {
-    onUserJoined?: (user: User) => void;
     onUserLeft?: (user: User) => void;
     onPadStateUpdated?: (data: PadRoom) => void;
     onError?: (error: string) => void;
@@ -25,7 +24,7 @@ export function useCollaboration(
     callbacks?: CollaborationCallbacks
 ): CollaborationState & CollaborationActions {
     const [isConnected, setIsConnected] = useState(false);
-    // const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
@@ -63,21 +62,16 @@ export function useCollaboration(
 
         socket.on('pad_state_updated', (data: PadStateUpdated) => {
             // Update users from the pad room
-            // if (data.users) {
-            //     const userList = Array.from(data.users.values());
-            //     setUsers(userList);
-            // }
+            if (data.users) {
+                const userList = Array.from(Object.values(data.users));
+                setUsers(userList);
+            }
 
             callbacksRef.current?.onPadStateUpdated?.(data);
         });
 
-        socket.on('user_joined', (user: User) => {
-            // setUsers((prev) => [...prev, user]);
-            callbacksRef.current?.onUserJoined?.(user);
-        });
-
         socket.on('user_left', (data: { userId: string; user: User }) => {
-            // setUsers((prev) => prev.filter((u) => u.id !== data.userId));
+            setUsers((prev) => prev.filter((u) => u.id !== data.userId));
             callbacksRef.current?.onUserLeft?.(data.user);
         });
 
@@ -127,7 +121,7 @@ export function useCollaboration(
         if (socket && currentPadIdRef.current) {
             // Don't disconnect the socket, just leave the current pad
             currentPadIdRef.current = null;
-            // setUsers([]);
+            setUsers([]);
             setError(null);
         }
     }, []);
@@ -155,7 +149,7 @@ export function useCollaboration(
     return {
         // State
         isConnected,
-        users: [],
+        users,
         error,
 
         // Actions

@@ -9,7 +9,7 @@ export interface User {
 
 export interface PadRoom {
     padId: string;
-    users: Map<string, User>;
+    users: User[];
     code: string;
     language: string;
 }
