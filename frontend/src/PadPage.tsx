@@ -57,23 +57,6 @@ export function PadPage() {
         return () => leavePad();
     }, [padId, isConnected, joinPad, leavePad]);
 
-    useEffect(() => {
-        if (!currentRunner) {
-            return;
-        }
-
-        const doInit = async () => {
-            setInitializingRunner(false);
-            const result = await currentRunner.init?.();
-            if (result) {
-                changeOutput(result.output);
-            }
-            setInitializingRunner(true);
-        };
-
-        doInit();
-    }, [currentRunner]); // ONLY run once when currentRunner changes
-
     const changeOutput = useCallback(
         (newOutput: OutputEntry[]) => {
             setPad((prevPad) =>
@@ -154,27 +137,43 @@ export function PadPage() {
     );
 
     const changeLanguage = useCallback(
-        (newLanguage: string) => {
+        async (newLanguage: string) => {
             if (!pad) {
+                return;
+            }
+
+            const newRunner = RUNNERS[newLanguage];
+            if (!newRunner) {
+                console.error(`Unsupported language: ${newLanguage}`);
                 return;
             }
 
             sendPadStateUpdate({
                 padId: pad.padId,
                 language: newLanguage,
-                code: RUNNERS[newLanguage]?.codeSample || '',
+                code: newRunner.codeSample || '',
             });
             setPad((prevPad) =>
                 prevPad
                     ? {
                           ...prevPad,
                           language: newLanguage,
-                          code: RUNNERS[newLanguage]?.codeSample || '',
+                          code: newRunner.codeSample || '',
                       }
                     : undefined
             );
+
+            try {
+                setInitializingRunner(true);
+                const result = await newRunner.init?.();
+                if (result) {
+                    changeOutput(result.output);
+                }
+            } finally {
+                setInitializingRunner(false);
+            }
         },
-        [sendPadStateUpdate, pad]
+        [pad, sendPadStateUpdate, changeOutput]
     );
 
     const clearOutput = useCallback(() => {
@@ -211,6 +210,8 @@ export function PadPage() {
         );
     }
 
+    console.log(initializingRunner, pad.isRunning);
+
     return (
         <div className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100">
             <div className="flex grow">
@@ -237,18 +238,7 @@ export function PadPage() {
                                 }))}
                             />
                         </div>
-                        {!pad.isRunning ? (
-                            <Button colorType="green" onClick={runCode}>
-                                <svg
-                                    className="w-4 h-4 mr-2"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
-                                Run Code
-                            </Button>
-                        ) : (
+                        {initializingRunner || pad.isRunning ? (
                             <Button disabled colorType="default">
                                 <svg
                                     className="w-4 h-4 mr-2 animate-spin"
@@ -270,6 +260,17 @@ export function PadPage() {
                                     ></path>
                                 </svg>
                                 Running...
+                            </Button>
+                        ) : (
+                            <Button colorType="green" onClick={runCode}>
+                                <svg
+                                    className="w-4 h-4 mr-2"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                                Run Code
                             </Button>
                         )}
                     </div>
