@@ -1,4 +1,5 @@
-import type { OutputEntry, RunResult } from './runner';
+import type { RunResult } from './runner';
+import type { OutputEntry } from '../../../backend/src/types';
 
 type Go = {
     childProcess: GoChildProcess;

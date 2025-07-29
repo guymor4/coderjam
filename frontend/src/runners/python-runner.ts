@@ -1,6 +1,7 @@
-import type { OutputEntry, RunResult } from './runner';
 // Import types only - won't be included in bundle
 import type { PyodideInterface } from 'pyodide';
+import type { RunResult } from './runner';
+import type { OutputEntry } from '../../../backend/src/types';
 
 let pyodide: PyodideInterface;
 

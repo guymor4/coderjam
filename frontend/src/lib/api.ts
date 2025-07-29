@@ -1,4 +1,4 @@
-import type { Pad, CreatePadResponse, ApiError } from '../types/api';
+import type { CreatePadResponse, ApiError } from '../types/api';
 
 async function doRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = endpoint;
@@ -30,14 +30,14 @@ export async function createPad(): Promise<CreatePadResponse> {
 }
 
 // Get pad by ID
-export async function getPad(id: string): Promise<Pad> {
-    return doRequest<Pad>(`/api/pad/${id}`);
-}
+// export async function getPad(id: string): Promise<Pad> {
+//     return doRequest<Pad>(`/api/pad/${id}`);
+// }
 
-// Update pad
-export async function updatePad(id: string, language: string, code: string): Promise<Pad> {
-    return doRequest<Pad>(`/api/pad/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ language, code }),
-    });
-}
+// // Update pad
+// export async function updatePad(id: string, language: string, code: string): Promise<Pad> {
+//     return doRequest<Pad>(`/api/pad/${id}`, {
+//         method: 'PUT',
+//         body: JSON.stringify({ language, code }),
+//     });
+// }

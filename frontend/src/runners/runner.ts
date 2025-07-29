@@ -2,11 +2,7 @@ import JavascriptRunner from './javascript-runner';
 import TypescriptRunner from './typescript-runner';
 import GoRunner from './go-runner';
 import PythonRunner from './python-runner';
-
-export type OutputEntry = {
-    text: string;
-    type: 'log' | 'error';
-};
+import type { OutputEntry } from '../../../backend/src/types';
 
 export type RunResult = {
     output: OutputEntry[];

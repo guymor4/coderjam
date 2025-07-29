@@ -1,29 +1,13 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import morgan from 'morgan';
+import { createServer as createHttpServer } from 'http';
 import { setupRoutes } from './routes';
+import { setupSocketServer } from './collaborationSocketServer';
 
 export function createServer() {
     const app = express();
     const isDevelopment = process.env.NODE_ENV !== 'production';
-
-    // Security middleware (relaxed for development)
-    app.use(helmet({
-        contentSecurityPolicy: isDevelopment ? false : {
-            directives: {
-                defaultSrc: ["'self'"],
-                styleSrc: ["'self'", "'unsafe-inline'"],
-                scriptSrc: ["'self'", "'unsafe-eval'"], // needed for Monaco Editor
-                imgSrc: ["'self'", "data:", "blob:"],
-                connectSrc: ["'self'"],
-                fontSrc: ["'self'"],
-                objectSrc: ["'none'"],
-                mediaSrc: ["'self'"],
-                frameSrc: ["'none'"],
-            },
-        },
-    }));
 
     // CORS configuration
     app.use(cors({
@@ -61,11 +45,16 @@ export function createServer() {
 }
 
 export function main() {
+    // Create HTTP server
     const PORT = process.env.PORT || 3001;
     const app = createServer();
+    const httpServer = createHttpServer(app);
+    
+    // Setup Socket.IO
+    setupSocketServer(httpServer);
     
     // Start server
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
         
@@ -74,7 +63,6 @@ export function main() {
         
         if (isDevelopment) {
             console.log(`Frontend: http://localhost:${PORT} (proxied to ${VITE_DEV_SERVER})`);
-            console.log(`API: http://localhost:${PORT}/api/health`);
             console.log(`Make sure Vite is running on ${VITE_DEV_SERVER}`);
         }
     });

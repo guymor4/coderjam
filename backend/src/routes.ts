@@ -32,38 +32,20 @@ export function setupRoutes(app: express.Application) {
         }
     });
 
-    app.get('/api/pad/:id', async (req, res) => {
-        try {
-            const pad = await getPad(req.params.id);
-            if (!pad) {
-                res.status(404).json({ error: `Pad '${req.params.id}' not found`});
-                return;
-            }
-            res.json(pad);
-        } catch (error) {
-            console.error('Error getting pad:', error);
-            res.status(500).json({ error: 'Failed to get pad' });
-        }
-    });
-
-    app.put('/api/pad/:id', async (req, res) => {
-        try {
-            const { language, code } = req.body;
-            if (!language) {
-                res.status(400).json({ error: 'Language is required' });
-                return;
-            }
-            const pad = await updatePad(req.params.id, language, code || '');
-            if (!pad) {
-                res.status(404).json({ error: 'Pad not found' });
-                return;
-            }
-            res.json(pad);
-        } catch (error) {
-            console.error('Error updating pad:', error);
-            res.status(500).json({ error: 'Failed to update pad' });
-        }
-    });
+    // app.get('/api/pad/:id', async (req, res) => {
+    //     try {
+    //         const pad = await getPad(req.params.id);
+    //         if (!pad) {
+    //             res.status(404).json({ error: `Pad '${req.params.id}' not found`});
+    //             return;
+    //         }
+    //
+    //         res.json(pad);
+    //     } catch (error) {
+    //         console.error('Error getting pad:', error);
+    //         res.status(500).json({ error: 'Failed to get pad' });
+    //     }
+    // });
 
     // Catch-all for unmatched API routes
     app.use('/api', (req, res) => {
