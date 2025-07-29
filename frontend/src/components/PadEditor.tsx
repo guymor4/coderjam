@@ -23,12 +23,12 @@ const CUSTOM_THEME: editor.IStandaloneThemeData = {
 };
 
 const OTHER_USERS_CURSOR_COLORS = [
-    'text-purple-400',
-    'text-green-400',
-    'text-blue-400',
-    'text-yellow-400',
-    'text-red-400',
-    'text-pink-400',
+    'text-purple-500',
+    'text-green-500',
+    'text-blue-500',
+    'text-yellow-500',
+    'text-red-500',
+    'text-pink-500',
 ];
 
 const cyrb53hash = (str: string, seed: number = 0) => {
@@ -54,24 +54,44 @@ function cursorDecorationFromUsers(users: User[]) {
 
     const usersWithCursor = users.filter((u) => !!u.cursor);
 
-    return usersWithCursor.map((user) => ({
-        range: {
-            startLineNumber: user.cursor!.line,
-            startColumn: user.cursor!.column,
-            endLineNumber: user.cursor!.line,
-            endColumn: user.cursor!.column + 1, // Assuming cursor is a single character
-        },
-        options: {
-            // This className will be used to style the cursor
-            // Color is determined by the user's name hash
-            className: `remote-cursor ${OTHER_USERS_CURSOR_COLORS[cyrb53hash(user.name) % OTHER_USERS_CURSOR_COLORS.length]}`,
-            hoverMessage: [
-                {
-                    value: user.name,
-                },
-            ],
-        },
-    }));
+    const decorations: editor.IModelDeltaDecoration[] = [];
+    for (const user of usersWithCursor) {
+        if (!user.cursor) {
+            console.warn(`User ${user.name} has no cursor defined`);
+            continue;
+        }
+
+        const colorClassName =
+            OTHER_USERS_CURSOR_COLORS[cyrb53hash(user.name) % OTHER_USERS_CURSOR_COLORS.length];
+        const cursorClassName = user.cursor?.selectionStart
+            ? 'remote-cursor-selection'
+            : 'remote-cursor';
+
+        // Use selectionStart if available, otherwise use cursor position
+        const startLine = user.cursor.selectionStart?.line ?? user.cursor.line;
+        const startColumn = user.cursor.selectionStart?.column ?? user.cursor.column;
+
+        decorations.push({
+            range: {
+                endLineNumber: user.cursor.line,
+                endColumn: user.cursor.column,
+                startLineNumber: startLine,
+                startColumn: startColumn,
+            },
+            options: {
+                // This className will be used to style the cursor
+                // Color is determined by the user's name hash
+                className: `${cursorClassName} ${colorClassName}`,
+                hoverMessage: [
+                    {
+                        value: user.name,
+                    },
+                ],
+                // shouldFillLineOnLineBreak: true,
+            },
+        });
+    }
+    return decorations;
 }
 
 interface PadEditorProps {
@@ -81,7 +101,7 @@ interface PadEditorProps {
     onCodeChange: (code: string) => void;
     onRunClick: () => void;
     onClearOutput: () => void;
-    onCursorChange?: (position: { line: number; column: number }) => void;
+    onCursorChange?: (newCursor: User['cursor']) => void;
 }
 
 export function PadEditor({
@@ -95,6 +115,30 @@ export function PadEditor({
 }: PadEditorProps) {
     const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | undefined>(undefined);
 
+    const handleCursorChange = useCallback(
+        (e: editor.ICursorSelectionChangedEvent) => {
+            if (!onCursorChange) {
+                return;
+            }
+
+            const isSelection =
+                e.selection.startLineNumber !== e.selection.endLineNumber ||
+                e.selection.startColumn !== e.selection.endColumn;
+
+            onCursorChange({
+                line: e.selection.endLineNumber,
+                column: e.selection.endColumn,
+                selectionStart: isSelection
+                    ? {
+                          line: e.selection.startLineNumber,
+                          column: e.selection.startColumn,
+                      }
+                    : undefined,
+            });
+        },
+        [onCursorChange]
+    );
+
     // Handle Monaco editor theme setup
     const handleEditorDidMount = useCallback(
         (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -104,15 +148,8 @@ export function PadEditor({
             monaco.editor.defineTheme('coderjam-dark', CUSTOM_THEME);
             monaco.editor.setTheme('coderjam-dark');
 
-            // Add cursor position change listener
-            if (onCursorChange) {
-                editor.onDidChangeCursorPosition((e) => {
-                    onCursorChange({
-                        line: e.position.lineNumber,
-                        column: e.position.column,
-                    });
-                });
-            }
+            // This will be called when the selection changes AND when the cursor position changes
+            editor.onDidChangeCursorSelection(handleCursorChange);
 
             // Add custom actions
             editor.addAction({
@@ -131,12 +168,11 @@ export function PadEditor({
                 contextMenuOrder: 2,
             });
         },
-        [onCursorChange, onClearOutput, onRunClick]
+        [handleCursorChange, onClearOutput, onRunClick]
     );
 
     useEffect(() => {
         if (!editor) {
-            console.warn('Editor not mounted yet, skipping decoration setup');
             return;
         }
         // Apply example decorations

@@ -28,16 +28,3 @@ export async function createPad(): Promise<CreatePadResponse> {
         method: 'POST',
     });
 }
-
-// Get pad by ID
-// export async function getPad(id: string): Promise<Pad> {
-//     return doRequest<Pad>(`/api/pad/${id}`);
-// }
-
-// // Update pad
-// export async function updatePad(id: string, language: string, code: string): Promise<Pad> {
-//     return doRequest<Pad>(`/api/pad/${id}`, {
-//         method: 'PUT',
-//         body: JSON.stringify({ language, code }),
-//     });
-// }

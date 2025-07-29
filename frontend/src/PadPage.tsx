@@ -280,11 +280,11 @@ export function PadPage() {
                             onCodeChange={changeCode}
                             onRunClick={runCode}
                             onClearOutput={clearOutput}
-                            onCursorChange={(cursor) => {
+                            onCursorChange={(newCursor) => {
                                 if (pad) {
                                     sendPadStateUpdate({
                                         padId: pad.padId,
-                                        cursor: cursor,
+                                        cursor: newCursor,
                                     });
                                 }
                             }}
