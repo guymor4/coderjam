@@ -62,7 +62,9 @@ export function useCollaboration(
         socket.on('pad_state_updated', (data: PadStateUpdated) => {
             // Update users from the pad room
             if (data.users) {
-                const userList = Array.from(Object.values(data.users));
+                const userList = Array.from(Object.values(data.users)).filter(
+                    (user) => user.id !== socket.id
+                );
                 setUsers(userList);
             }
 

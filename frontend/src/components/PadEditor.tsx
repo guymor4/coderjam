@@ -1,8 +1,9 @@
 import { Editor, type Monaco } from '@monaco-editor/react';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { editor } from 'monaco-editor';
 import { KeyCode, KeyMod } from 'monaco-editor';
 import type { Language } from '../types/common';
+import type { User } from '../../../backend/src/types';
 
 const CUSTOM_THEME: editor.IStandaloneThemeData = {
     base: 'vs-dark',
@@ -21,9 +22,31 @@ const CUSTOM_THEME: editor.IStandaloneThemeData = {
     },
 };
 
+function cursorDecorationFromUsers(users: User[]) {
+    return users
+        .filter((u) => !!u.cursor)
+        .map((user) => ({
+            range: {
+                startLineNumber: user.cursor!.line,
+                startColumn: user.cursor!.column,
+                endLineNumber: user.cursor!.line,
+                endColumn: user.cursor!.column + 1, // Assuming cursor is a single character
+            },
+            options: {
+                className: 'remote-cursor',
+                hoverMessage: [
+                    {
+                        value: user.name,
+                    },
+                ],
+            },
+        }));
+}
+
 interface PadEditorProps {
     code: string;
     language: Language;
+    users: User[];
     onCodeChange: (code: string) => void;
     onRunClick: () => void;
     onClearOutput: () => void;
@@ -33,6 +56,7 @@ interface PadEditorProps {
 export function PadEditor({
     code,
     language,
+    users,
     onRunClick,
     onClearOutput,
     onCodeChange: onCodeChangeOriginal,
@@ -76,8 +100,21 @@ export function PadEditor({
                 contextMenuOrder: 2,
             });
         },
-        [onClearOutput, onRunClick, onCursorChange]
+        [onCursorChange, onClearOutput, onRunClick]
     );
+
+    useEffect(() => {
+        if (!editorRef.current) {
+            console.warn('Editor not mounted yet, skipping decoration setup');
+            return;
+        }
+        // Apply example decorations
+        const createdDecs = editorRef.current.createDecorationsCollection(
+            cursorDecorationFromUsers(users)
+        );
+
+        return () => createdDecs.clear();
+    }, [users]);
 
     const onCodeChange = useCallback(
         (newValue: string | undefined) => {

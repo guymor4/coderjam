@@ -276,6 +276,7 @@ export function PadPage() {
                         <PadEditor
                             code={pad.code || ''}
                             language={pad.language || 'javascript'}
+                            users={users}
                             onCodeChange={changeCode}
                             onRunClick={runCode}
                             onClearOutput={clearOutput}
