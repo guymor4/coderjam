@@ -279,6 +279,14 @@ export function PadPage() {
                             onCodeChange={changeCode}
                             onRunClick={runCode}
                             onClearOutput={clearOutput}
+                            onCursorChange={(cursor) => {
+                                if (pad) {
+                                    sendPadStateUpdate({
+                                        padId: pad.padId,
+                                        cursor: cursor,
+                                    });
+                                }
+                            }}
                         />
                     </div>
                 </div>

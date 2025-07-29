@@ -27,6 +27,7 @@ interface PadEditorProps {
     onCodeChange: (code: string) => void;
     onRunClick: () => void;
     onClearOutput: () => void;
+    onCursorChange?: (position: { line: number; column: number }) => void;
 }
 
 export function PadEditor({
@@ -35,6 +36,7 @@ export function PadEditor({
     onRunClick,
     onClearOutput,
     onCodeChange: onCodeChangeOriginal,
+    onCursorChange,
 }: PadEditorProps) {
     const editorRef = useRef<editor.IStandaloneCodeEditor>(null);
 
@@ -46,6 +48,16 @@ export function PadEditor({
             // Define custom theme
             monaco.editor.defineTheme('coderjam-dark', CUSTOM_THEME);
             monaco.editor.setTheme('coderjam-dark');
+
+            // Add cursor position change listener
+            if (onCursorChange) {
+                editor.onDidChangeCursorPosition((e) => {
+                    onCursorChange({
+                        line: e.position.lineNumber,
+                        column: e.position.column,
+                    });
+                });
+            }
 
             // Add custom actions
             editor.addAction({
@@ -64,7 +76,7 @@ export function PadEditor({
                 contextMenuOrder: 2,
             });
         },
-        [onClearOutput, onRunClick]
+        [onClearOutput, onRunClick, onCursorChange]
     );
 
     const onCodeChange = useCallback(
