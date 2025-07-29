@@ -15,7 +15,6 @@ export interface CollaborationActions {
 }
 
 export interface CollaborationCallbacks {
-    onUserLeft?: (user: User) => void;
     onPadStateUpdated?: (data: PadRoom) => void;
     onError?: (error: string) => void;
 }
@@ -68,11 +67,6 @@ export function useCollaboration(
             }
 
             callbacksRef.current?.onPadStateUpdated?.(data);
-        });
-
-        socket.on('user_left', (data: { userId: string; user: User }) => {
-            setUsers((prev) => prev.filter((u) => u.id !== data.userId));
-            callbacksRef.current?.onUserLeft?.(data.user);
         });
 
         socket.on('error', (errorData: { message: string }) => {

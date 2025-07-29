@@ -1,11 +1,12 @@
 import { Navigate, useParams } from 'react-router-dom';
 import { PadEditor } from './components/PadEditor';
 import { useCallback, useEffect, useState } from 'react';
-import { type OutputEntry, RUNNERS } from './runners/runner';
+import { RUNNERS } from './runners/runner';
 import { Select } from './components/Select';
 import { Button } from './components/Button';
 import { useCollaboration } from './hooks/useCollaboration';
 import { capitalize, type PadState, SUPPORTED_LANGUAGES } from './types/common';
+import type { OutputEntry } from '../../backend/src/types';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -19,7 +20,6 @@ export function PadPage() {
     const [pad, setPad] = useState<PadState | undefined>(undefined);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
     const [isReady, setIsReady] = useState<boolean>(false);
-    const [output, setOutput] = useState<OutputEntry[]>(INITIAL_OUTPUT);
 
     // Setup collaboration hook
     const {
@@ -30,9 +30,6 @@ export function PadPage() {
         error: collaborationError,
         users,
     } = useCollaboration({
-        onUserLeft: (user) => {
-            console.log('User left via hook:', user);
-        },
         onPadStateUpdated: (data) => {
             console.log('Received pad state via hook:', data);
             console.assert(data.users?.length > 0, 'Users field should not be empty');
@@ -43,13 +40,7 @@ export function PadPage() {
                     "' should be one of: " +
                     SUPPORTED_LANGUAGES.join(', ')
             );
-            setPad((prevPad) => ({
-                ...(prevPad ?? {}),
-                padId: data.padId ?? prevPad?.padId,
-                code: data.code ?? prevPad?.code,
-                language: data.language ?? prevPad?.language,
-                users: data.users ?? prevPad?.users,
-            }));
+            setPad((prevPad) => (prevPad === undefined ? data : Object.assign(prevPad, data)));
         },
         onError: (error) => {
             console.error('Collaboration error:', error);
@@ -66,6 +57,27 @@ export function PadPage() {
         return () => leavePad();
     }, [padId, isConnected, joinPad, leavePad]);
 
+    const handleOutputChange = useCallback(
+        (newOutput: OutputEntry[]) => {
+            setPad((prevPad) =>
+                prevPad
+                    ? {
+                          ...prevPad,
+                          output: newOutput,
+                      }
+                    : undefined
+            );
+            // Send output update if pad is defined
+            if (pad) {
+                sendPadStateUpdate({
+                    padId: pad.padId,
+                    output: newOutput,
+                });
+            }
+        },
+        [pad, sendPadStateUpdate]
+    );
+
     // Handle runner initialization on language change
     useEffect(() => {
         if (!currentRunner) {
@@ -75,16 +87,15 @@ export function PadPage() {
             setIsReady(false);
             const result = await currentRunner.init?.();
             if (result) {
-                setOutput(result.output);
+                handleOutputChange(result.output);
             }
             setIsReady(true);
         };
 
         doInit();
-    }, [currentRunner]);
+    }, [currentRunner, handleOutputChange]);
 
     const onRunClick = useCallback(async () => {
-        console.log('Running code:', pad, currentRunner);
         if (!currentRunner || !pad) {
             return;
         }
@@ -92,11 +103,11 @@ export function PadPage() {
         try {
             setIsReady(false);
             const newOutput = await currentRunner.runCode(pad.code);
-            setOutput((existingOutput) => [...existingOutput, ...newOutput.output]);
+            handleOutputChange([...pad.output, ...newOutput.output]);
         } finally {
             setIsReady(true);
         }
-    }, [currentRunner, pad]);
+    }, [currentRunner, handleOutputChange, pad]);
 
     const handleCodeChange = useCallback(
         (newCode: string) => {
@@ -145,8 +156,8 @@ export function PadPage() {
     );
 
     const onClearOutput = useCallback(() => {
-        setOutput(CLEAN_OUTPUT);
-    }, []);
+        handleOutputChange(CLEAN_OUTPUT);
+    }, [handleOutputChange]);
 
     if (!padId) {
         return <Navigate to="/" />;
@@ -272,7 +283,7 @@ export function PadPage() {
                         </Button>
                     </div>
                     <div className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm">
-                        {output?.map((entry, index) => (
+                        {pad.output?.map((entry, index) => (
                             <div
                                 key={index}
                                 className={`mb-1 ${

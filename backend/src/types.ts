@@ -12,6 +12,8 @@ export interface PadRoom {
     users: User[];
     code: string;
     language: string;
+    output: OutputEntry[];
+    isRunning: boolean;
 }
 
 // Update of a pad state, received from the client
@@ -20,6 +22,8 @@ export interface PadStateUpdate {
     code?: string;
     language?: string;
     cursor?: { line: number; column: number };
+    isRunning?: boolean;
+    output?: OutputEntry[];
 }
 
 export interface PadStateUpdated extends PadRoom {}
@@ -32,3 +36,8 @@ export interface PadDB {
     created_at: Date;
     updated_at: Date;
 }
+
+export type OutputEntry = {
+    text: string;
+    type: 'log' | 'error';
+};

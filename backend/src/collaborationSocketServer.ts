@@ -46,6 +46,8 @@ export function setupSocketServer(httpServer: HTTPServer) {
                         code: pad.code,
                         language: pad.language,
                         users: [],
+                        isRunning: false,
+                        output: [],
                     });
                 }
                 const room = padRoomsById.get(padId)!;
@@ -65,11 +67,10 @@ export function setupSocketServer(httpServer: HTTPServer) {
                     room.users.push(user);
                 }
 
-                // Send the pad state to the joining user only if they are not the creator
                 socket.emit('pad_state_updated', {
-                    padId,
-                    code: pad.code,
-                    language: pad.language,
+                    ...room,
+                } as PadStateUpdated);
+                socket.to(padId).emit('pad_state_updated', {
                     users: room.users,
                 } as PadStateUpdated);
 
@@ -82,7 +83,7 @@ export function setupSocketServer(httpServer: HTTPServer) {
 
         socket.on(
             'pad_state_update',
-            async ({ padId, code, cursor, language }: PadStateUpdate) => {
+            async ({ padId, code, cursor, language, output, isRunning }: PadStateUpdate) => {
                 const room = padRoomsById.get(padId);
                 if (!room) {
                     console.warn(`Pad room not found for padId: ${padId}`);
@@ -110,6 +111,14 @@ export function setupSocketServer(httpServer: HTTPServer) {
                         room.language = language;
                     }
 
+                    if (output !== undefined) {
+                        room.output = output;
+                    }
+
+                    if (isRunning !== undefined) {
+                        room.isRunning = isRunning;
+                    }
+
                     // Save to database
                     await updatePad(padId, room.language, room.code);
 
@@ -118,6 +127,8 @@ export function setupSocketServer(httpServer: HTTPServer) {
                         padId,
                         code,
                         language,
+                        output,
+                        isRunning,
                         users: newUsers,
                     } as PadStateUpdated);
                 } catch (error) {
@@ -137,13 +148,16 @@ export function setupSocketServer(httpServer: HTTPServer) {
                     // Remove user from the room
                     room.users.splice(userIndex, 1);
 
-                    // Notify other users
-                    socket.to(padId).emit('user_left', { userId: socket.id, user });
-
-                    // Clean up empty rooms
                     if (room.users.length === 0) {
+                        // Clean up empty rooms
                         padRoomsById.delete(padId);
+                    } else {
+                        // Broadcast updated user list to remaining users
+                        socket.to(padId).emit('pad_state_updated', {
+                            users: room.users,
+                        } as PadStateUpdated);
                     }
+
 
                     console.log(`User ${socket.id} (${user.name}) left pad ${padId}`);
                 }
