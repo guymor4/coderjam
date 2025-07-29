@@ -16,10 +16,10 @@ const CLEAN_OUTPUT: OutputEntry[] = [{ type: 'log', text: 'Output cleared.' }];
 export function PadPage() {
     const { padId } = useParams<{ padId: string }>();
     const [isLoading] = useState<boolean>(false);
+    const [initializingRunner, setInitializingRunner] = useState<boolean>(false);
     const [error] = useState<Error | undefined>(undefined);
     const [pad, setPad] = useState<PadState | undefined>(undefined);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
-    const [isReady, setIsReady] = useState<boolean>(false);
 
     // Setup collaboration hook
     const {
@@ -57,7 +57,24 @@ export function PadPage() {
         return () => leavePad();
     }, [padId, isConnected, joinPad, leavePad]);
 
-    const handleOutputChange = useCallback(
+    useEffect(() => {
+        if (!currentRunner) {
+            return;
+        }
+
+        const doInit = async () => {
+            setInitializingRunner(false);
+            const result = await currentRunner.init?.();
+            if (result) {
+                changeOutput(result.output);
+            }
+            setInitializingRunner(true);
+        };
+
+        doInit();
+    }, [currentRunner]); // ONLY run once when currentRunner changes
+
+    const changeOutput = useCallback(
         (newOutput: OutputEntry[]) => {
             setPad((prevPad) =>
                 prevPad
@@ -78,38 +95,43 @@ export function PadPage() {
         [pad, sendPadStateUpdate]
     );
 
-    // Handle runner initialization on language change
-    useEffect(() => {
-        if (!currentRunner) {
-            return;
-        }
-        const doInit = async () => {
-            setIsReady(false);
-            const result = await currentRunner.init?.();
-            if (result) {
-                handleOutputChange(result.output);
-            }
-            setIsReady(true);
-        };
-
-        doInit();
-    }, [currentRunner, handleOutputChange]);
-
-    const onRunClick = useCallback(async () => {
+    const runCode = useCallback(async () => {
         if (!currentRunner || !pad) {
             return;
         }
 
         try {
-            setIsReady(false);
+            sendPadStateUpdate({
+                padId: pad.padId,
+                isRunning: true,
+            });
+            setPad((prevPad) =>
+                prevPad
+                    ? {
+                          ...prevPad,
+                          isRunning: true,
+                      }
+                    : undefined
+            );
             const newOutput = await currentRunner.runCode(pad.code);
-            handleOutputChange([...pad.output, ...newOutput.output]);
+            changeOutput([...pad.output, ...newOutput.output]);
         } finally {
-            setIsReady(true);
+            sendPadStateUpdate({
+                padId: pad.padId,
+                isRunning: false,
+            });
+            setPad((prevPad) =>
+                prevPad
+                    ? {
+                          ...prevPad,
+                          isRunning: false,
+                      }
+                    : undefined
+            );
         }
-    }, [currentRunner, handleOutputChange, pad]);
+    }, [currentRunner, changeOutput, pad, sendPadStateUpdate]);
 
-    const handleCodeChange = useCallback(
+    const changeCode = useCallback(
         (newCode: string) => {
             if (!pad) {
                 return;
@@ -131,7 +153,7 @@ export function PadPage() {
         [sendPadStateUpdate, pad]
     );
 
-    const handleLanguageChange = useCallback(
+    const changeLanguage = useCallback(
         (newLanguage: string) => {
             if (!pad) {
                 return;
@@ -155,9 +177,9 @@ export function PadPage() {
         [sendPadStateUpdate, pad]
     );
 
-    const onClearOutput = useCallback(() => {
-        handleOutputChange(CLEAN_OUTPUT);
-    }, [handleOutputChange]);
+    const clearOutput = useCallback(() => {
+        changeOutput(CLEAN_OUTPUT);
+    }, [changeOutput]);
 
     if (!padId) {
         return <Navigate to="/" />;
@@ -200,7 +222,7 @@ export function PadPage() {
                             <div className="text-sm text-dark-300">{padId}</div>
                             <Select
                                 value={pad.language || 'javascript'}
-                                onChange={handleLanguageChange}
+                                onChange={changeLanguage}
                                 className="capitalize"
                                 options={SUPPORTED_LANGUAGES.map((lang) => ({
                                     value: lang,
@@ -215,8 +237,8 @@ export function PadPage() {
                                 }))}
                             />
                         </div>
-                        {isReady ? (
-                            <Button colorType="green" onClick={onRunClick}>
+                        {!pad.isRunning ? (
+                            <Button colorType="green" onClick={runCode}>
                                 <svg
                                     className="w-4 h-4 mr-2"
                                     fill="currentColor"
@@ -255,9 +277,9 @@ export function PadPage() {
                         <PadEditor
                             code={pad.code || ''}
                             language={pad.language || 'javascript'}
-                            onCodeChange={handleCodeChange}
-                            onRunClick={onRunClick}
-                            onClearOutput={onClearOutput}
+                            onCodeChange={changeCode}
+                            onRunClick={runCode}
+                            onClearOutput={clearOutput}
                         />
                     </div>
                 </div>
@@ -265,7 +287,7 @@ export function PadPage() {
                 <div className="flex-1 flex flex-col bg-dark-800 border-l border-dark-600">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
                         <h2 className="text-lg font-semibold text-dark-50">Output</h2>
-                        <Button variant="outline" onClick={onClearOutput}>
+                        <Button variant="outline" onClick={clearOutput}>
                             <svg
                                 className="w-4 h-4 mr-2"
                                 fill="none"
@@ -283,7 +305,7 @@ export function PadPage() {
                         </Button>
                     </div>
                     <div className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm">
-                        {pad.output?.map((entry, index) => (
+                        {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
                             <div
                                 key={index}
                                 className={`mb-1 ${
