@@ -4,6 +4,12 @@ export interface User {
     cursor?: {
         line: number;
         column: number;
+        // Optional selection start position
+        // if defined, the cursor line and column are the end of the selection
+        selectionStart?: {
+            line: number;
+            column: number
+        }
     };
 }
 
@@ -21,7 +27,7 @@ export interface PadStateUpdate {
     padId: string;
     code?: string;
     language?: string;
-    cursor?: { line: number; column: number };
+    cursor?: User['cursor'];
     isRunning?: boolean;
     output?: OutputEntry[];
 }

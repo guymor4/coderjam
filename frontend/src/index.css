@@ -32,3 +32,8 @@ body {
     border-left: 2px solid currentColor;
     margin: 0 0 0 -1px;
 }
+
+.remote-cursor-selection {
+    background-color: currentColor !important;
+    opacity: 0.2 !important;
+}
