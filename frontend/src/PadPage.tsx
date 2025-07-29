@@ -330,6 +330,9 @@ export function PadPage() {
             <div className="flex grow-0 items-center justify-between px-6 py-3 bg-dark-800 border-t border-dark-600">
                 <div className="flex items-center gap-2">
                     <div className="flex gap-1">
+                        {users.length === 0 && (
+                            <div className="text-sm text-gray-500">Just you here</div>
+                        )}
                         {users.slice(0, 10).map((user) => (
                             <div className="flex items-center gap-2" key={user.id}>
                                 {/* TODO make this user color */}

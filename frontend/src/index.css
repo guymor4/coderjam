@@ -29,6 +29,6 @@ body {
 
 /* Remote cursor styles for Monaco Editor */
 .remote-cursor {
-    border-left: 2px solid currentColor !important;
-    margin: 0 0 0 -1px !important;
+    border-left: 2px solid currentColor;
+    margin: 0 0 0 -1px;
 }

@@ -1,5 +1,5 @@
 import { Editor, type Monaco } from '@monaco-editor/react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { editor } from 'monaco-editor';
 import { KeyCode, KeyMod } from 'monaco-editor';
 import type { Language } from '../types/common';
@@ -22,25 +22,56 @@ const CUSTOM_THEME: editor.IStandaloneThemeData = {
     },
 };
 
+const OTHER_USERS_CURSOR_COLORS = [
+    'text-purple-400',
+    'text-green-400',
+    'text-blue-400',
+    'text-yellow-400',
+    'text-red-400',
+    'text-pink-400',
+];
+
+const cyrb53hash = (str: string, seed: number = 0) => {
+    let h1 = 0xdeadbeef ^ seed,
+        h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+    h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+};
+
 function cursorDecorationFromUsers(users: User[]) {
-    return users
-        .filter((u) => !!u.cursor)
-        .map((user) => ({
-            range: {
-                startLineNumber: user.cursor!.line,
-                startColumn: user.cursor!.column,
-                endLineNumber: user.cursor!.line,
-                endColumn: user.cursor!.column + 1, // Assuming cursor is a single character
-            },
-            options: {
-                className: 'remote-cursor',
-                hoverMessage: [
-                    {
-                        value: user.name,
-                    },
-                ],
-            },
-        }));
+    if (!users || users.length === 0) {
+        return [];
+    }
+
+    const usersWithCursor = users.filter((u) => !!u.cursor);
+
+    return usersWithCursor.map((user) => ({
+        range: {
+            startLineNumber: user.cursor!.line,
+            startColumn: user.cursor!.column,
+            endLineNumber: user.cursor!.line,
+            endColumn: user.cursor!.column + 1, // Assuming cursor is a single character
+        },
+        options: {
+            // This className will be used to style the cursor
+            // Color is determined by the user's name hash
+            className: `remote-cursor ${OTHER_USERS_CURSOR_COLORS[cyrb53hash(user.name) % OTHER_USERS_CURSOR_COLORS.length]}`,
+            hoverMessage: [
+                {
+                    value: user.name,
+                },
+            ],
+        },
+    }));
 }
 
 interface PadEditorProps {
@@ -62,12 +93,12 @@ export function PadEditor({
     onCodeChange: onCodeChangeOriginal,
     onCursorChange,
 }: PadEditorProps) {
-    const editorRef = useRef<editor.IStandaloneCodeEditor>(null);
+    const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | undefined>(undefined);
 
     // Handle Monaco editor theme setup
     const handleEditorDidMount = useCallback(
         (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
-            editorRef.current = editor;
+            setEditor(editor);
 
             // Define custom theme
             monaco.editor.defineTheme('coderjam-dark', CUSTOM_THEME);
@@ -104,17 +135,15 @@ export function PadEditor({
     );
 
     useEffect(() => {
-        if (!editorRef.current) {
+        if (!editor) {
             console.warn('Editor not mounted yet, skipping decoration setup');
             return;
         }
         // Apply example decorations
-        const createdDecs = editorRef.current.createDecorationsCollection(
-            cursorDecorationFromUsers(users)
-        );
+        const createdDecs = editor.createDecorationsCollection(cursorDecorationFromUsers(users));
 
         return () => createdDecs.clear();
-    }, [users]);
+    }, [editor, users]);
 
     const onCodeChange = useCallback(
         (newValue: string | undefined) => {
