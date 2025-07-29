@@ -210,8 +210,6 @@ export function PadPage() {
         );
     }
 
-    console.log(initializingRunner, pad.isRunning);
-
     return (
         <div className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100">
             <div className="flex grow">
