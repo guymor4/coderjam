@@ -24,6 +24,7 @@ export function PadPage() {
     // pad.users contains the list of users currently in the pad INCLUDING the current user
     const [pad, setPad] = useState<PadState | undefined>(undefined);
     const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
+    const [isCoderGradient, setIsCoderGradient] = useState<boolean>(true);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
 
     // Setup collaboration hook
@@ -259,7 +260,37 @@ export function PadPage() {
                 <div className="flex-1 flex flex-col">
                     <div className="flex grow-0 items-center justify-between px-6 py-4 bg-dark-800 border-b border-dark-600">
                         <div className="flex items-center gap-4">
-                            <h1 className="text-xl font-semibold text-dark-50">CoderJam</h1>
+                            <h1
+                                className="text-2xl font-semibold"
+                                onMouseLeave={() => setIsCoderGradient(true)}
+                            >
+                                <span
+                                    key="logo-coder"
+                                    className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
+                                >
+                                    Coder
+                                </span>
+                                <span
+                                    key="logo-coder"
+                                    className={`relative transition-all duration-300 text-dark-50 ${isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
+                                    onMouseEnter={() => setIsCoderGradient(false)}
+                                >
+                                    Coder
+                                </span>
+                                <span
+                                    key="logo-coder"
+                                    className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
+                                >
+                                    Jam
+                                </span>
+                                <span
+                                    key="logo-coder"
+                                    className={`relative transition-all duration-300 text-dark-50 ${!isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
+                                    onMouseEnter={() => setIsCoderGradient(true)}
+                                >
+                                    Jam
+                                </span>
+                            </h1>
                             <div className="text-sm text-dark-300">{padId}</div>
                             <Select
                                 value={pad.language || 'javascript'}
