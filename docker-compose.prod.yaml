@@ -22,6 +22,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
+    image: sharkdx/coderjam-webapp
     container_name: coderjam-webapp-prod
     ports:
       - "80:80"
