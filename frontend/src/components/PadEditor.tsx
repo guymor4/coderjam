@@ -175,6 +175,8 @@ export function PadEditor({
         if (!editor) {
             return;
         }
+
+        console.log('users changed', users);
         // Apply example decorations
         const createdDecs = editor.createDecorationsCollection(cursorDecorationFromUsers(users));
 

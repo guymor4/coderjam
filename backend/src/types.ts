@@ -34,6 +34,17 @@ export interface PadStateUpdate {
 
 export interface PadStateUpdated extends PadRoom {}
 
+export interface UserRename {
+    padId: string;
+    newName: string;
+}
+
+export interface UserRenamed {
+    padId: string;
+    userId: string;
+    newName: string;
+}
+
 // Represents a pad in the DB
 export interface PadDB {
     id: string;
