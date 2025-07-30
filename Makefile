@@ -19,7 +19,7 @@ help:
 dev:
 	@if ! docker ps | grep -q coderjam-postgres; then \
 		echo "Starting PostgreSQL..."; \
-		docker-compose up -d; \
+		docker compose up -d; \
 	else \
 		echo "PostgreSQL already running :)"; \
 	fi
@@ -51,17 +51,17 @@ type-check:
 
 # Stop all containers
 docker-stop:
-	docker-compose down
-	docker-compose -f docker-compose.prod.yaml down
+	docker compose down
+	docker compose -f docker-compose.prod.yaml down
 
 # Build and push production Docker images to the registry
 # HANDLE WITH CAUTION
 docker-prod-push:
-	docker-compose -f docker-compose.prod.yaml build
-	docker-compose -f docker-compose.prod.yaml push
+	docker compose -f docker-compose.prod.yaml build
+	docker compose -f docker-compose.prod.yaml push
 
 # Pull and start production Docker containers
 # HANDLE WITH CAUTION
 docker-prod:
-	docker-compose -f docker-compose.prod.yaml pull
-	docker-compose -f docker-compose.prod.yaml up -d
+	docker compose -f docker-compose.prod.yaml pull
+	docker compose -f docker-compose.prod.yaml up -d
