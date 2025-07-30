@@ -52,21 +52,11 @@ This will start:
 - Backend server on `http://localhost:3001`
 - **Access your app at `http://localhost:3001`** (backend proxies to frontend)
 
-### Building for Production
-Build both applications:
+### Production
+For production, we build frontend and backend into a single container and docker-compose.prod.yaml that manages it all.
 ```bash
-yarn build
-```
-Build individually:
-```bash
-yarn build:frontend
-yarn build:backend
-```
-
-### Production Deployment
-Start the production server:
-```bash
-yarn start
+# Build and start production server (+ PostgreSQL)
+docker-compose -f docker-compose.prod.yaml up --build
 ```
 
 ## License

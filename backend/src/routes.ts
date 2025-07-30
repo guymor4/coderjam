@@ -32,21 +32,6 @@ export function setupRoutes(app: express.Application) {
         }
     });
 
-    // app.get('/api/pad/:id', async (req, res) => {
-    //     try {
-    //         const pad = await getPad(req.params.id);
-    //         if (!pad) {
-    //             res.status(404).json({ error: `Pad '${req.params.id}' not found`});
-    //             return;
-    //         }
-    //
-    //         res.json(pad);
-    //     } catch (error) {
-    //         console.error('Error getting pad:', error);
-    //         res.status(500).json({ error: 'Failed to get pad' });
-    //     }
-    // });
-
     // Catch-all for unmatched API routes
     app.use('/api', (req, res) => {
         res.status(404).json({ error: 'API endpoint not found' });
@@ -55,7 +40,7 @@ export function setupRoutes(app: express.Application) {
     if (isDevelopment) {
         // Development: Proxy all non-API requests to Vite dev server
         console.log(`Proxying frontend requests to: ${VITE_DEV_SERVER}`);
-        
+
         const viteProxy = createProxyMiddleware({
             target: VITE_DEV_SERVER,
             changeOrigin: true,
@@ -69,18 +54,6 @@ export function setupRoutes(app: express.Application) {
             }
         });
 
-        app.get('/p/:padId', (req, res, next) => {
-            const padId = req.params.padId;
-            if (!padId) {
-                return res.status(400).json({ error: 'Pad ID is required' });
-            }
-
-            console.log(`Proxying session ${padId}`);
-
-            // Proxy to Vite dev server with session ID
-            return viteProxy(req, res, next);
-        });
-
         // "express.static" alternative in development, proxies all non-API routes to Vite
         app.use('/', (req, res, next) => {
             // Skip API routes
@@ -91,7 +64,7 @@ export function setupRoutes(app: express.Application) {
         });
     } else {
         // Production: Serve static files from React build
-        const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+        const frontendDistPath = path.join(__dirname, '../../public');
         app.use(express.static(frontendDistPath));
         
         // Handle React Router routes
