@@ -1,29 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { PadRoom, PadStateUpdate, PadStateUpdated, User } from '../../../backend/src/types';
+import type {
+    PadRoom,
+    PadStateUpdate,
+    PadStateUpdated,
+    UserRename,
+    UserRenamed,
+} from '../../../backend/src/types';
 
 export interface CollaborationState {
     isConnected: boolean;
-    users: User[];
     error: string | null;
+    userId?: string;
 }
 
 export interface CollaborationActions {
     joinPad: (padId: string, userName?: string) => Promise<void>;
     leavePad: () => void;
     sendPadStateUpdate: (data: PadStateUpdate) => void;
+    sendRenameUpdate: (data: UserRename) => void;
 }
 
 export interface CollaborationCallbacks {
-    onPadStateUpdated?: (data: PadRoom) => void;
-    onError?: (error: string) => void;
+    onPadStateUpdated: (data: PadRoom) => void;
+    onUserRenamed: (data: UserRenamed) => void;
+    onError: (error: string) => void;
 }
 
 export function useCollaboration(
     callbacks?: CollaborationCallbacks
 ): CollaborationState & CollaborationActions {
     const [isConnected, setIsConnected] = useState(false);
-    const [users, setUsers] = useState<User[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
@@ -60,21 +67,17 @@ export function useCollaboration(
         });
 
         socket.on('pad_state_updated', (data: PadStateUpdated) => {
-            // Update users from the pad room
-            if (data.users) {
-                const userList = Array.from(Object.values(data.users)).filter(
-                    (user) => user.id !== socket.id
-                );
-                setUsers(userList);
-            }
+            callbacksRef.current?.onPadStateUpdated(data);
+        });
 
-            callbacksRef.current?.onPadStateUpdated?.(data);
+        socket.on('user_renamed', (data: UserRenamed) => {
+            callbacksRef.current?.onUserRenamed(data);
         });
 
         socket.on('error', (errorData: { message: string }) => {
             const errorMessage = errorData.message || 'Unknown socket error';
             setError(errorMessage);
-            callbacksRef.current?.onError?.(errorMessage);
+            callbacksRef.current?.onError(errorMessage);
         });
 
         // Cleanup on unmount
@@ -87,6 +90,8 @@ export function useCollaboration(
             socketRef.current = null;
         };
     }, []);
+
+    const userId = socketRef.current?.id;
 
     const joinPad = useCallback(
         async (padId: string, userName: string = 'Anonymous') => {
@@ -117,7 +122,6 @@ export function useCollaboration(
         if (socket && currentPadIdRef.current) {
             // Don't disconnect the socket, just leave the current pad
             currentPadIdRef.current = null;
-            setUsers([]);
             setError(null);
         }
     }, []);
@@ -142,15 +146,37 @@ export function useCollaboration(
         [isConnected]
     );
 
+    const sendRenameUpdate = useCallback(
+        (data: UserRename) => {
+            const socket = socketRef.current;
+            if (!socket || !isConnected) {
+                console.warn('Socket not connected, cannot send rename update', socket);
+                return;
+            }
+
+            try {
+                socket.emit('user_rename', data);
+                console.log('Sent user rename update:', data);
+            } catch (err) {
+                const errorMessage =
+                    err instanceof Error ? err.message : 'Failed to send rename update';
+                setError(errorMessage);
+                console.error('Error sending user rename update:', err);
+            }
+        },
+        [isConnected]
+    );
+
     return {
         // State
         isConnected,
-        users,
         error,
+        userId,
 
         // Actions
         joinPad,
         leavePad,
         sendPadStateUpdate,
+        sendRenameUpdate,
     };
 }

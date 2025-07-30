@@ -1,7 +1,7 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { getPad, updatePad } from './padService';
-import { PadRoom, PadStateUpdate, PadStateUpdated, User } from './types';
+import { PadRoom, PadStateUpdate, PadStateUpdated, User, UserRename, UserRenamed } from './types';
 
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
@@ -131,6 +131,36 @@ export function setupSocketServer(httpServer: HTTPServer) {
                         isRunning,
                         users: newUsers,
                     } as PadStateUpdated);
+                } catch (error) {
+                    console.error('Error handling code change:', error);
+                }
+            }
+        );
+
+        socket.on(
+            'user_rename',
+            async ({ padId, newName }: UserRename) => {
+                const room = padRoomsById.get(padId);
+                if (!room) {
+                    console.warn(`Pad room not found for padId: ${padId}`);
+                    return;
+                }
+
+                const user = room?.users.find(u => u.id === socket.id);
+                if (!user) {
+                    console.warn(`User ${socket.id} not found in pad room ${padId}`);
+                    return;
+                }
+
+                try {
+                    user.name = newName;
+
+                    // Broadcast to other users in the room
+                    socket.to(padId).emit('user_renamed', {
+                        padId,
+                        userId: user.id,
+                        newName
+                    } as UserRenamed);
                 } catch (error) {
                     console.error('Error handling code change:', error);
                 }

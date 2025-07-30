@@ -1,12 +1,14 @@
 import { Navigate, useParams } from 'react-router-dom';
 import { PadEditor } from './components/PadEditor';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RUNNERS } from './runners/runner';
 import { Select } from './components/Select';
 import { Button } from './components/Button';
 import { useCollaboration } from './hooks/useCollaboration';
 import { capitalize, type PadState, SUPPORTED_LANGUAGES } from './types/common';
 import type { OutputEntry } from '../../backend/src/types';
+import { getUserColorClassname } from './utils/userColors';
+import { useLocalStorageState } from './hooks/useLocalStorageState';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -18,17 +20,21 @@ export function PadPage() {
     const [isLoading] = useState<boolean>(false);
     const [initializingRunner, setInitializingRunner] = useState<boolean>(false);
     const [error] = useState<Error | undefined>(undefined);
+    // pad is the current state of the pad, including code, language, output, etc.
+    // pad.users contains the list of users currently in the pad INCLUDING the current user
     const [pad, setPad] = useState<PadState | undefined>(undefined);
+    const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
 
     // Setup collaboration hook
     const {
         isConnected,
+        userId,
         joinPad,
         leavePad,
         sendPadStateUpdate,
+        sendRenameUpdate,
         error: collaborationError,
-        users,
     } = useCollaboration({
         onPadStateUpdated: (data) => {
             console.log('Received pad state via hook:', data);
@@ -40,10 +46,23 @@ export function PadPage() {
                     "' should be one of: " +
                     SUPPORTED_LANGUAGES.join(', ')
             );
-            setPad((prevPad) => (prevPad === undefined ? data : Object.assign(prevPad, data)));
+            setPad((prevPad) =>
+                prevPad === undefined ? data : Object.assign({ ...prevPad }, data)
+            );
         },
         onError: (error) => {
             console.error('Collaboration error:', error);
+        },
+        onUserRenamed: (data) => {
+            console.log('Received user renamed:', data, pad?.users);
+            setPad((prevPad) => {
+                if (!prevPad) return prevPad;
+                const updatedUsers = prevPad.users.map((user) =>
+                    user.id === data.userId ? { ...user, name: data.newName } : user
+                );
+                console.log(updatedUsers);
+                return { ...prevPad, users: updatedUsers };
+            });
         },
     });
 
@@ -53,9 +72,17 @@ export function PadPage() {
             return;
         }
 
-        joinPad(padId, 'User');
+        joinPad(padId, username);
         return () => leavePad();
+
+        // `username` should not be a dependency here
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [padId, isConnected, joinPad, leavePad]);
+
+    const otherUsers = useMemo(() => {
+        if (!pad) return [];
+        return pad.users.filter((user) => user.id !== userId);
+    }, [pad, userId]);
 
     const changeOutput = useCallback(
         (newOutput: OutputEntry[]) => {
@@ -180,6 +207,21 @@ export function PadPage() {
         changeOutput(CLEAN_OUTPUT);
     }, [changeOutput]);
 
+    const handleUsernameChange = useCallback(
+        (newUsername: string) => {
+            if (!pad) {
+                return;
+            }
+
+            sendRenameUpdate({
+                padId: pad.padId,
+                newName: newUsername,
+            });
+            setUsername(newUsername);
+        },
+        [pad, sendRenameUpdate, setUsername]
+    );
+
     if (!padId) {
         return <Navigate to="/" />;
     }
@@ -276,7 +318,7 @@ export function PadPage() {
                         <PadEditor
                             code={pad.code || ''}
                             language={pad.language || 'javascript'}
-                            users={users}
+                            users={otherUsers}
                             onCodeChange={changeCode}
                             onRunClick={runCode}
                             onClearOutput={clearOutput}
@@ -330,27 +372,44 @@ export function PadPage() {
             <div className="flex grow-0 items-center justify-between px-6 py-3 bg-dark-800 border-t border-dark-600">
                 <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                        {users.length === 0 && (
+                        {otherUsers.length === 0 && (
                             <div className="text-sm text-gray-500">Just you here</div>
                         )}
-                        {users.slice(0, 10).map((user) => (
+                        {otherUsers.slice(0, 10).map((user) => (
                             <div className="flex items-center gap-2" key={user.id}>
-                                {/* TODO make this user color */}
-                                <div className="w-2 h-2 rounded-full flex items-center justify-center bg-blue-500"></div>
+                                <div
+                                    className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
+                                ></div>
                                 <span className="text-sm text-dark-300">{user.name}</span>
                             </div>
                         ))}
-                        {users.length > 10 && (
+                        {otherUsers.length > 10 && (
                             <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
-                                +{users.length - 3}
+                                +{otherUsers.length - 3}
                             </div>
                         )}
                     </div>
                 </div>
-                <div>
-                    <span className="text-sm text-dark-300">
-                        {isConnected ? 'Connected' : 'Disconnected'}
-                    </span>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="username" className="text-sm text-dark-300">
+                            Username:
+                        </label>
+                        <input
+                            id="username"
+                            type="text"
+                            value={username}
+                            onChange={(e) => handleUsernameChange(e.target.value)}
+                            className="px-2 py-1 text-sm bg-dark-600 border border-dark-500 rounded text-dark-50 focus:outline-none focus:border-blue-400"
+                            placeholder="Guest"
+                            maxLength={20}
+                        />
+                    </div>
+                    <div>
+                        <span className="text-sm text-dark-300">
+                            {isConnected ? 'Connected' : 'Disconnected'}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

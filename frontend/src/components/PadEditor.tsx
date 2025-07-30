@@ -4,6 +4,7 @@ import type { editor } from 'monaco-editor';
 import { KeyCode, KeyMod } from 'monaco-editor';
 import type { Language } from '../types/common';
 import type { User } from '../../../backend/src/types';
+import { getUserColorClassname } from '../utils/userColors';
 
 const CUSTOM_THEME: editor.IStandaloneThemeData = {
     base: 'vs-dark',
@@ -22,31 +23,6 @@ const CUSTOM_THEME: editor.IStandaloneThemeData = {
     },
 };
 
-const OTHER_USERS_CURSOR_COLORS = [
-    'text-purple-500',
-    'text-green-500',
-    'text-blue-500',
-    'text-yellow-500',
-    'text-red-500',
-    'text-pink-500',
-];
-
-const cyrb53hash = (str: string, seed: number = 0) => {
-    let h1 = 0xdeadbeef ^ seed,
-        h2 = 0x41c6ce57 ^ seed;
-    for (let i = 0, ch; i < str.length; i++) {
-        ch = str.charCodeAt(i);
-        h1 = Math.imul(h1 ^ ch, 2654435761);
-        h2 = Math.imul(h2 ^ ch, 1597334677);
-    }
-    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
-    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
-    h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-
-    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
-};
-
 function cursorDecorationFromUsers(users: User[]) {
     if (!users || users.length === 0) {
         return [];
@@ -61,8 +37,7 @@ function cursorDecorationFromUsers(users: User[]) {
             continue;
         }
 
-        const colorClassName =
-            OTHER_USERS_CURSOR_COLORS[cyrb53hash(user.name) % OTHER_USERS_CURSOR_COLORS.length];
+        const colorClassName = getUserColorClassname(user.name);
         const cursorClassName = user.cursor?.selectionStart
             ? 'remote-cursor-selection'
             : 'remote-cursor';
@@ -175,6 +150,8 @@ export function PadEditor({
         if (!editor) {
             return;
         }
+
+        console.log('users changed', users);
         // Apply example decorations
         const createdDecs = editor.createDecorationsCollection(cursorDecorationFromUsers(users));
 
