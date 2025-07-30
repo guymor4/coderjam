@@ -58,7 +58,6 @@ type Process = {
 };
 
 const GO_WASM_URL = `/go.wasm`;
-const WASM_EXEC_PATH = './wasm_exec.js'; // Path to the Go WASM exec JS file
 const USER_CODE_FILENAME = '/userCode.go'; // Must be in root directory
 const O_CREAT = 0x40; // Create file if it does not exist
 const O_TRUNC = 0x200; // Truncate file to zero length
@@ -93,7 +92,7 @@ async function getGo(): Promise<Go> {
         return singletonGo;
     }
 
-    await import(WASM_EXEC_PATH);
+    await import(window.location.origin + '/wasm_exec.js');
     // @ts-expect-error dynamically imported js
     const goJsWrapper = new window.Go();
     // Load Go WASM module

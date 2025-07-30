@@ -18,7 +18,6 @@ print(password)
 `;
 
 async function init(): Promise<RunResult> {
-    // replace with actual url
     await import(window.location.origin + '/pyodide/pyodide.js');
 
     if (!Object.hasOwn(window, 'loadPyodide')) {

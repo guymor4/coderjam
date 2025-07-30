@@ -29,7 +29,6 @@ async function getTS(): Promise<Typescript> {
         return typescriptModule;
     }
 
-    // replace with actual url
     return (await import(window.location.origin + '/typescript.js'))
         .default as unknown as Typescript;
 }
