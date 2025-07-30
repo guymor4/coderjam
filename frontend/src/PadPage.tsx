@@ -7,6 +7,8 @@ import { Button } from './components/Button';
 import { useCollaboration } from './hooks/useCollaboration';
 import { capitalize, type PadState, SUPPORTED_LANGUAGES } from './types/common';
 import type { OutputEntry } from '../../backend/src/types';
+import { getUserColorClassname } from './utils/userColors';
+import { useLocalStorageState } from './hooks/useLocalStorageState';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -21,7 +23,7 @@ export function PadPage() {
     // pad is the current state of the pad, including code, language, output, etc.
     // pad.users contains the list of users currently in the pad INCLUDING the current user
     const [pad, setPad] = useState<PadState | undefined>(undefined);
-    const [username, setUsername] = useState<string>('Guest');
+    const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
 
     // Setup collaboration hook
@@ -217,7 +219,7 @@ export function PadPage() {
             });
             setUsername(newUsername);
         },
-        [pad, sendRenameUpdate]
+        [pad, sendRenameUpdate, setUsername]
     );
 
     if (!padId) {
@@ -375,8 +377,9 @@ export function PadPage() {
                         )}
                         {otherUsers.slice(0, 10).map((user) => (
                             <div className="flex items-center gap-2" key={user.id}>
-                                {/* TODO make this user color */}
-                                <div className="w-2 h-2 rounded-full flex items-center justify-center bg-blue-500"></div>
+                                <div
+                                    className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
+                                ></div>
                                 <span className="text-sm text-dark-300">{user.name}</span>
                             </div>
                         ))}
