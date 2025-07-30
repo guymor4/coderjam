@@ -57,7 +57,7 @@ export function setupRoutes(app: express.Application) {
         // "express.static" alternative in development, proxies all non-API routes to Vite
         app.use('/', (req, res, next) => {
             // Skip API routes
-            if (req.path.startsWith('/api') || req.path.startsWith('/p/')) {
+            if (req.path.startsWith('/api')) {
                 return next();
             }
             return viteProxy(req, res, next);
