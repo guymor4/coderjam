@@ -168,8 +168,6 @@ export function setupSocketServer(httpServer: HTTPServer) {
         );
 
         socket.on('disconnect', () => {
-            console.log(`User disconnected: ${socket.id}`);
-
             // Remove user from all pad rooms
             for (const [padId, room] of padRoomsById.entries()) {
                 const userIndex = room.users.findIndex(u => u.id === socket.id)
@@ -189,7 +187,7 @@ export function setupSocketServer(httpServer: HTTPServer) {
                     }
 
 
-                    console.log(`User ${socket.id} (${user.name}) left pad ${padId}`);
+                    console.log(`User '${user.name}' (${socket.id}) left pad ${padId}`);
                 }
             }
         });

@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: coderjam-postgres-prod
+    environment:
+      POSTGRES_DB: coderjam
+      POSTGRES_USER: coderjam
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coderjam123}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coderjam -d coderjam"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - coderjam-network
+
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: coderjam-webapp-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=coderjam
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-coderjam123}
+      - DB_NAME=coderjam
+      - PORT=80
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - coderjam-network
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  coderjam-network:
+    driver: bridge

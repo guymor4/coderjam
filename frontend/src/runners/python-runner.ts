@@ -19,8 +19,7 @@ print(password)
 
 async function init(): Promise<RunResult> {
     // replace with actual url
-    // @ts-expect-error dynamically imported js for now
-    await import('http://localhost:5173/pyodide/pyodide.js');
+    await import(window.location.origin + '/pyodide/pyodide.js');
 
     if (!Object.hasOwn(window, 'loadPyodide')) {
         throw new Error('Pyodide failed to load');

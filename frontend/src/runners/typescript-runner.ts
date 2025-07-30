@@ -30,8 +30,8 @@ async function getTS(): Promise<Typescript> {
     }
 
     // replace with actual url
-    // @ts-expect-error dynamically imported js for now
-    return (await import('http://localhost:5173/typescript.js')).default as unknown as Typescript;
+    return (await import(window.location.origin + '/typescript.js'))
+        .default as unknown as Typescript;
 }
 
 async function runCode(code: string): Promise<RunResult> {
