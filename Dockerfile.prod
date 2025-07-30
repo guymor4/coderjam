@@ -46,8 +46,8 @@ COPY --from=builder /app/backend/sql ./backend/sql
 # Copy built frontend to be served by the backend
 COPY --from=builder /app/frontend/dist ./public
 
-# Expose port 80 for the combined application
-EXPOSE 80
+# Expose port 8080 for the combined application
+EXPOSE 8080
 
 # Start the built backend server
 CMD ["node", "backend/dist/server.js"]

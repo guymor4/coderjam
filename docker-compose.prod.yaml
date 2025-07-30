@@ -1,5 +1,6 @@
 services:
   postgres:
+    platform: linux/amd64
     image: postgres:15
     container_name: coderjam-postgres-prod
     environment:
@@ -19,14 +20,14 @@ services:
       - coderjam-network
 
   webapp:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile.prod
     image: sharkdx/coderjam-webapp
     container_name: coderjam-webapp-prod
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:8080"
     environment:
       - NODE_ENV=production
       - DB_HOST=postgres
@@ -34,7 +35,7 @@ services:
       - DB_USER=coderjam
       - DB_PASSWORD=${POSTGRES_PASSWORD:-coderjam123}
       - DB_NAME=coderjam
-      - PORT=80
+      - PORT=8080
     depends_on:
       postgres:
         condition: service_healthy
