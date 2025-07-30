@@ -569,6 +569,6 @@ fabric.properties
 
 !/gradle/wrapper/gradle-wrapper.jar
 
-frontend/public/pyodide/
-.yarn
+frontend/public/pyodide/*.whl*
+frontend/public/pyodide/*.tar
 .claude
