@@ -11,6 +11,9 @@ help:
 	@echo "  build       - Build production version"
 	@echo "  docker-prod-push - Build and push production Docker images to the registry"
 	@echo "  docker-prod - Pull and start production Docker containers"
+	@echo "  nginx-install - Install nginx and certbot on server"
+	@echo "  ssl-setup - Setup SSL certificate with Let's Encrypt"
+	@echo "  nginx-deploy - Deploy nginx configuration"
 	@echo "  test        - Run tests"
 	@echo "  lint        - Run linter"
 	@echo "  type-check  - Run type checking"
@@ -51,7 +54,6 @@ type-check:
 
 # Stop all containers
 docker-stop:
-	docker compose down
 	docker compose -f docker-compose.prod.yaml down
 
 # Build and push production Docker images to the registry
@@ -63,5 +65,5 @@ docker-prod-push:
 # Pull and start production Docker containers
 # HANDLE WITH CAUTION
 docker-prod:
-	docker compose -f docker-compose.prod.yaml pull
-	docker compose -f docker-compose.prod.yaml up -d
+	sudo docker compose -f docker-compose.prod.yaml pull
+	sudo docker compose -f docker-compose.prod.yaml up -d
