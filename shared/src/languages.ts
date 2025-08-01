@@ -1,5 +1,5 @@
 export const SUPPORTED_LANGUAGES: string[] = ['javascript', 'typescript', 'go', 'python'];
-export type Language = typeof SUPPORTED_LANGUAGES[number];
+export type Language = 'javascript' | 'typescript' | 'python' | 'go';
 
 const LANGUAGES_CONFIG: Record<Language, { codeSample: string }> = {
     javascript: {
@@ -16,7 +16,18 @@ import "fmt"
 func main() {
     fmt.Println("Hello, World!")
 }`,
+    },
+    python: {
+        codeSample:`import random
+import string
 
+def generate_password(length=12):
+    characters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(characters) for _ in range(length))
+
+password = generate_password()
+print(password)
+`
     }
 }
 

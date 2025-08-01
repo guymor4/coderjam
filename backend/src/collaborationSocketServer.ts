@@ -47,7 +47,8 @@ export function setupSocketServer(httpServer: HTTPServer) {
                         language: pad.language,
                         users: [],
                         isRunning: false,
-                        output: [],
+                        output: pad.output || [],
+                        ownerId: socket.id, // First user becomes the owner
                     });
                 }
                 const room = padRoomsById.get(padId)!;
@@ -65,6 +66,11 @@ export function setupSocketServer(httpServer: HTTPServer) {
                 } else {
                     // New user, add to room
                     room.users.push(user);
+                    
+                    // If room has no owner (original owner left), make this user the new owner
+                    if (!room.ownerId || !room.users.find(u => u.id === room.ownerId)) {
+                        room.ownerId = socket.id;
+                    }
                 }
 
                 socket.emit('pad_state_updated', {
@@ -176,13 +182,20 @@ export function setupSocketServer(httpServer: HTTPServer) {
                     // Remove user from the room
                     room.users.splice(userIndex, 1);
 
+                    // Check if the leaving user was the owner and reassign if needed
+                    if (room.ownerId === socket.id && room.users.length > 0) {
+                        // Assign ownership to the first remaining user
+                        room.ownerId = room.users[0]!.id;
+                        console.log(`Ownership of pad ${padId} transferred from ${socket.id} to ${room.ownerId}`);
+                    }
+
                     if (room.users.length === 0) {
                         // Clean up empty rooms
                         padRoomsById.delete(padId);
                     } else {
                         // Broadcast updated user list to remaining users
                         socket.to(padId).emit('pad_state_updated', {
-                            users: room.users,
+                            ...room,
                         } as PadStateUpdated);
                     }
 

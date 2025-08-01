@@ -1872,15 +1872,15 @@ __metadata:
 
 "coderjam-shared@file:../shared::locator=coderjam-backend%40workspace%3Abackend":
   version: 1.0.0
-  resolution: "coderjam-shared@file:../shared#../shared::hash=47745e&locator=coderjam-backend%40workspace%3Abackend"
-  checksum: f30cd79d6dd44218b91a934afd09e85229e339252ae316742dfe7539a7da6f4cb96595b5b1026ce89b50aed0ef0cc0c98822bd5b92aab46027c24bd2ca7c019e
+  resolution: "coderjam-shared@file:../shared#../shared::hash=b93b0b&locator=coderjam-backend%40workspace%3Abackend"
+  checksum: c76de6212812b7dc6bf6d27801c25c2df6e9283f9aecd3d724560e6933265af602996f690ca5dc751b3ba1878eb13d3072e66dfe78d629f15263606f182539cb
   languageName: node
   linkType: hard
 
 "coderjam-shared@file:../shared::locator=coderjam-frontend%40workspace%3Afrontend":
   version: 1.0.0
-  resolution: "coderjam-shared@file:../shared#../shared::hash=47745e&locator=coderjam-frontend%40workspace%3Afrontend"
-  checksum: f30cd79d6dd44218b91a934afd09e85229e339252ae316742dfe7539a7da6f4cb96595b5b1026ce89b50aed0ef0cc0c98822bd5b92aab46027c24bd2ca7c019e
+  resolution: "coderjam-shared@file:../shared#../shared::hash=b93b0b&locator=coderjam-frontend%40workspace%3Afrontend"
+  checksum: c76de6212812b7dc6bf6d27801c25c2df6e9283f9aecd3d724560e6933265af602996f690ca5dc751b3ba1878eb13d3072e66dfe78d629f15263606f182539cb
   languageName: node
   linkType: hard
 
