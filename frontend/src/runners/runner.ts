@@ -2,38 +2,33 @@ import JavascriptRunner from './javascript-runner';
 import TypescriptRunner from './typescript-runner';
 import GoRunner from './go-runner';
 import PythonRunner from './python-runner';
-import type { OutputEntry } from '../../../backend/src/types';
-
-export type RunResult = {
-    output: OutputEntry[];
-};
+import type { RunResult } from 'coderjam-shared';
 
 export type Runner = {
-    codeSample: string;
-
-    init?: () => Promise<RunResult>;
+    init: () => Promise<RunResult>;
+    isReady?: () => boolean;
     runCode: (code: string) => Promise<RunResult>;
-    // dispose?: () => void; // Uncomment if you want to support cleanup
 };
 
 export const RUNNERS: Record<string, Runner> = {
     javascript: {
+        init: JavascriptRunner.init,
+        isReady: JavascriptRunner.isReady,
         runCode: JavascriptRunner.runCode,
-        codeSample: JavascriptRunner.CODE_SAMPLE,
     },
     typescript: {
         init: TypescriptRunner.init,
+        isReady: TypescriptRunner.isReady,
         runCode: TypescriptRunner.runCode,
-        codeSample: TypescriptRunner.CODE_SAMPLE,
     },
     go: {
         init: GoRunner.onInit,
+        isReady: GoRunner.isReady,
         runCode: GoRunner.runCode,
-        codeSample: GoRunner.CODE_SAMPLE,
     },
     python: {
         init: PythonRunner.init,
+        isReady: PythonRunner.isReady,
         runCode: PythonRunner.runCode,
-        codeSample: PythonRunner.CODE_SAMPLE,
     },
 };

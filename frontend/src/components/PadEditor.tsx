@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { editor } from 'monaco-editor';
 import { KeyCode, KeyMod } from 'monaco-editor';
 import type { Language } from '../types/common';
-import type { User } from '../../../backend/src/types';
+import type { User } from 'coderjam-shared';
 import { getUserColorClassname } from '../utils/userColors';
 
 const CUSTOM_THEME: editor.IStandaloneThemeData = {
@@ -151,7 +151,6 @@ export function PadEditor({
             return;
         }
 
-        console.log('users changed', users);
         // Apply example decorations
         const createdDecs = editor.createDecorationsCollection(cursorDecorationFromUsers(users));
 

@@ -5,7 +5,8 @@
     "description": "CoderJam - A web playground that runs code in the browser using WebAssembly",
     "workspaces": [
         "frontend",
-        "backend"
+        "backend",
+        "shared"
     ],
     "scripts": {
         "dev": "concurrently \"yarn dev:backend\" \"yarn dev:frontend\"",

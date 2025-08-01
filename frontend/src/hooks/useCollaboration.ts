@@ -1,41 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type {
-    PadRoom,
-    PadStateUpdate,
-    PadStateUpdated,
-    UserRename,
-    UserRenamed,
-} from '../../../backend/src/types';
+import type { PadStateUpdate, PadStateUpdated, UserRename, UserRenamed } from 'coderjam-shared';
 
-export interface CollaborationState {
+export interface useCollaborationResult {
+    // State
     isConnected: boolean;
     error: string | null;
     userId?: string;
-}
 
-export interface CollaborationActions {
-    joinPad: (padId: string, userName?: string) => Promise<void>;
+    // Actions
+    joinPad: (padId: string, userName: string) => Promise<void>;
     leavePad: () => void;
     sendPadStateUpdate: (data: PadStateUpdate) => void;
     sendRenameUpdate: (data: UserRename) => void;
 }
 
-export interface CollaborationCallbacks {
-    onPadStateUpdated: (data: PadRoom) => void;
+export interface useCollaborationCallbacks {
+    onPadStateUpdated: (data: PadStateUpdated) => void;
     onUserRenamed: (data: UserRenamed) => void;
     onError: (error: string) => void;
 }
 
-export function useCollaboration(
-    callbacks?: CollaborationCallbacks
-): CollaborationState & CollaborationActions {
+export function useCollaboration(callbacks?: useCollaborationCallbacks): useCollaborationResult {
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
     const currentPadIdRef = useRef<string | null>(null);
-    const callbacksRef = useRef<CollaborationCallbacks | undefined>(callbacks);
+    const callbacksRef = useRef<useCollaborationCallbacks | undefined>(callbacks);
 
     // Update callbacks ref when they change
     useEffect(() => {
@@ -94,7 +86,7 @@ export function useCollaboration(
     const userId = socketRef.current?.id;
 
     const joinPad = useCallback(
-        async (padId: string, userName: string = 'Anonymous') => {
+        async (padId: string, userName: string) => {
             const socket = socketRef.current;
 
             if (!socket || !isConnected) {

@@ -1,9 +1,12 @@
 // Import types only - won't be included in bundle
 import type { PyodideInterface } from 'pyodide';
-import type { RunResult } from './runner';
-import type { OutputEntry } from '../../../backend/src/types';
+import type { RunResult, OutputEntry } from 'coderjam-shared';
 
 let pyodide: PyodideInterface;
+
+function isReady(): boolean {
+    return pyodide !== undefined;
+}
 
 const CODE_SAMPLE = `\
 import random
@@ -74,4 +77,4 @@ async function runCode(code: string): Promise<RunResult> {
     };
 }
 
-export default { runCode, init, CODE_SAMPLE };
+export default { runCode, init, CODE_SAMPLE, isReady };

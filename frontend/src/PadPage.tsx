@@ -5,8 +5,14 @@ import { RUNNERS } from './runners/runner';
 import { Select } from './components/Select';
 import { Button } from './components/Button';
 import { useCollaboration } from './hooks/useCollaboration';
-import { capitalize, type PadState, SUPPORTED_LANGUAGES } from './types/common';
-import type { OutputEntry } from '../../backend/src/types';
+import {
+    capitalize,
+    getLanguageCodeSample,
+    isValidLanguage,
+    type OutputEntry,
+    type PadRoom,
+    SUPPORTED_LANGUAGES,
+} from 'coderjam-shared';
 import { getUserColorClassname } from './utils/userColors';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 
@@ -22,7 +28,7 @@ export function PadPage() {
     const [error] = useState<Error | undefined>(undefined);
     // pad is the current state of the pad, including code, language, output, etc.
     // pad.users contains the list of users currently in the pad INCLUDING the current user
-    const [pad, setPad] = useState<PadState | undefined>(undefined);
+    const [pad, setPad] = useState<PadRoom | undefined>(undefined);
     const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const [isCoderGradient, setIsCoderGradient] = useState<boolean>(true);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
@@ -41,7 +47,7 @@ export function PadPage() {
             console.log('Received pad state via hook:', data);
             console.assert(data.users?.length > 0, 'Users field should not be empty');
             console.assert(
-                !data.language || SUPPORTED_LANGUAGES.includes(data.language),
+                !data.language || isValidLanguage(data.language),
                 "Language '" +
                     data.language +
                     "' should be one of: " +
@@ -80,7 +86,7 @@ export function PadPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [padId, isConnected, joinPad, leavePad]);
 
-    const otherUsers = useMemo(() => {
+    const usersWithoutMe = useMemo(() => {
         if (!pad) return [];
         return pad.users.filter((user) => user.id !== userId);
     }, [pad, userId]);
@@ -105,6 +111,34 @@ export function PadPage() {
         },
         [pad, sendPadStateUpdate]
     );
+
+    useEffect(() => {
+        if (!currentRunner) {
+            console.error('No runner available for the current language:', pad?.language);
+            return;
+        }
+
+        if (currentRunner.isReady()) {
+            console.log('Runner is already initialized.');
+            return;
+        }
+
+        console.log('Initializing new runner for language:', pad?.language);
+
+        const initRunner = async () => {
+            try {
+                setInitializingRunner(true);
+                const result = await currentRunner.init();
+                if (result) {
+                    changeOutput(result.output);
+                }
+            } finally {
+                setInitializingRunner(false);
+            }
+        };
+
+        initRunner();
+    }, [changeOutput, currentRunner, pad?.language]);
 
     const runCode = useCallback(async () => {
         if (!currentRunner || !pad) {
@@ -179,29 +213,19 @@ export function PadPage() {
             sendPadStateUpdate({
                 padId: pad.padId,
                 language: newLanguage,
-                code: newRunner.codeSample || '',
+                code: getLanguageCodeSample(newLanguage),
             });
             setPad((prevPad) =>
                 prevPad
                     ? {
                           ...prevPad,
                           language: newLanguage,
-                          code: newRunner.codeSample || '',
+                          code: getLanguageCodeSample(newLanguage),
                       }
                     : undefined
             );
-
-            try {
-                setInitializingRunner(true);
-                const result = await newRunner.init?.();
-                if (result) {
-                    changeOutput(result.output);
-                }
-            } finally {
-                setInitializingRunner(false);
-            }
         },
-        [pad, sendPadStateUpdate, changeOutput]
+        [pad, sendPadStateUpdate]
     );
 
     const clearOutput = useCallback(() => {
@@ -265,26 +289,22 @@ export function PadPage() {
                                 onMouseLeave={() => setIsCoderGradient(true)}
                             >
                                 <span
-                                    key="logo-coder"
                                     className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
                                 >
                                     Coder
                                 </span>
                                 <span
-                                    key="logo-coder"
                                     className={`relative transition-all duration-300 text-dark-50 ${isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
                                     onMouseEnter={() => setIsCoderGradient(false)}
                                 >
                                     Coder
                                 </span>
                                 <span
-                                    key="logo-coder"
                                     className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
                                 >
                                     Jam
                                 </span>
                                 <span
-                                    key="logo-coder"
                                     className={`relative transition-all duration-300 text-dark-50 ${!isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
                                     onMouseEnter={() => setIsCoderGradient(true)}
                                 >
@@ -348,8 +368,8 @@ export function PadPage() {
                     <div className="flex-1 bg-dark-800">
                         <PadEditor
                             code={pad.code || ''}
-                            language={pad.language || 'javascript'}
-                            users={otherUsers}
+                            language={pad.language}
+                            users={usersWithoutMe}
                             onCodeChange={changeCode}
                             onRunClick={runCode}
                             onClearOutput={clearOutput}
@@ -403,10 +423,10 @@ export function PadPage() {
             <div className="flex grow-0 items-center justify-between px-6 py-3 bg-dark-800 border-t border-dark-600">
                 <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                        {otherUsers.length === 0 && (
+                        {usersWithoutMe.length === 0 && (
                             <div className="text-sm text-gray-500">Just you here</div>
                         )}
-                        {otherUsers.slice(0, 10).map((user) => (
+                        {usersWithoutMe.slice(0, 10).map((user) => (
                             <div className="flex items-center gap-2" key={user.id}>
                                 <div
                                     className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
@@ -414,9 +434,9 @@ export function PadPage() {
                                 <span className="text-sm text-dark-300">{user.name}</span>
                             </div>
                         ))}
-                        {otherUsers.length > 10 && (
+                        {usersWithoutMe.length > 10 && (
                             <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
-                                +{otherUsers.length - 3}
+                                +{usersWithoutMe.length - 3}
                             </div>
                         )}
                     </div>

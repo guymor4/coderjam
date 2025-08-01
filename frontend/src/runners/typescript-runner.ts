@@ -1,6 +1,6 @@
 import JavascriptRunner from './javascript-runner';
 import type TS from 'typescript';
-import type { RunResult } from './runner';
+import type { RunResult } from 'coderjam-shared';
 
 type Typescript = typeof TS;
 
@@ -12,6 +12,10 @@ console.log(greet('World'));
 `;
 
 let typescriptModule: Typescript;
+
+function isReady(): boolean {
+    return typescriptModule !== undefined;
+}
 
 async function init(): Promise<RunResult> {
     try {
@@ -53,4 +57,4 @@ async function runCode(code: string): Promise<RunResult> {
 }
 
 // noinspection JSUnusedGlobalSymbols
-export default { init, runCode, CODE_SAMPLE };
+export default { init, runCode, isReady, CODE_SAMPLE };
