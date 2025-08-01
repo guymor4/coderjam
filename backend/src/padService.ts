@@ -1,6 +1,6 @@
-import { getLanguageCodeSample, Language } from 'coderjam-shared';
+import { getLanguageCodeSample, Language, OutputEntry } from 'coderjam-shared';
 import { query } from './database';
-import {PadDB} from './types';
+import { PadDB, PadStored } from './types';
 import {QueryResult} from "pg";
 
 const DEFAULT_LANGUAGE: Language= 'javascript';
@@ -32,18 +32,36 @@ export async function createPad(): Promise<string> {
     return id;
 }
 
-export async function getPad(id: string): Promise<PadDB | undefined> {
+export async function getPad(id: string): Promise<PadStored | undefined> {
     const result: QueryResult<PadDB> = await query('SELECT * FROM pads WHERE id = $1', [id]);
-    if (result.rowCount === 0) {
+    if (result.rowCount === 0 || result.rows.length === 0 || !result.rows[0]) {
         return undefined; // Pad not found
     }
-    return result.rows[0] ?? undefined;
+
+    const padDB = result.rows[0];
+    console.warn(padDB.output)
+
+    var output: OutputEntry[] = [];
+    try {
+        output = JSON.parse(padDB.output ?? '[]') as OutputEntry[];
+    } catch (error) {
+        console.error('Failed to parse pad output:', error);
+    }
+
+    return {
+        padId: padDB.id,
+        code: padDB.code,
+        language: padDB.language,
+        output: output,
+    }
 }
 
-export async function updatePad(id: string, language: string, code: string): Promise<PadDB | undefined> {
+export async function updatePad(id: string, language: string, code: string, output: OutputEntry[]): Promise<PadDB | undefined> {
+    const outputStr = JSON.stringify(output);
+
     const result = await query(
-        'UPDATE pads SET language = $2, code = $3 WHERE id = $1 RETURNING *',
-        [id, language, code]
+        'UPDATE pads SET language = $2, code = $3, output = $4 WHERE id = $1 RETURNING *',
+        [id, language, code, outputStr]
     );
     if (result.rowCount === 0) {
         return undefined; // Pad not found

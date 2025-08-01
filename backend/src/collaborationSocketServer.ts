@@ -1,7 +1,7 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { getPad, updatePad } from './padService';
-import { PadRoom, PadStateUpdate, PadStateUpdated, User, UserRename, UserRenamed } from './types';
+import { PadRoom, PadStateUpdate, PadStateUpdated, User, UserRename, UserRenamed } from 'coderjam-shared';
 
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
@@ -120,7 +120,7 @@ export function setupSocketServer(httpServer: HTTPServer) {
                     }
 
                     // Save to database
-                    await updatePad(padId, room.language, room.code);
+                    await updatePad(padId, room.language, room.code, room.output);
 
                     // Broadcast to other users in the room
                     socket.to(padId).emit('pad_state_updated', {
