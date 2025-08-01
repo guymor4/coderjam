@@ -2,7 +2,7 @@ import { type JSModuleLoadResult, QuickJSContext, QuickJSWASMModule } from 'quic
 import { newQuickJSWASMModuleFromVariant, newVariant, RELEASE_SYNC } from 'quickjs-emscripten';
 import wasmLocation from '@jitl/quickjs-wasmfile-release-sync/wasm?url';
 
-import type { RunResult } from './runner';
+import type { RunResult } from 'coderjam-shared';
 
 const CODE_SAMPLE = `\
 console.log('Hello World!');
@@ -12,32 +12,37 @@ const variant = newVariant(RELEASE_SYNC, {
     wasmLocation,
 });
 
-let QuickJS: QuickJSWASMModule;
+let quickJSModule: QuickJSWASMModule;
 
-const extractArrayFromVM = (vm: QuickJSContext, name: string): string[] => {
-    const arrayHandle = vm.getProp(vm.global, name);
-    const arr: string[] = [];
-    const lenHandle = vm.getProp(arrayHandle, 'length');
-    const len = vm.getNumber(lenHandle);
-    lenHandle.dispose();
+function isReady(): boolean {
+    return quickJSModule !== undefined;
+}
 
-    for (let i = 0; i < len; i++) {
-        const itemHandle = vm.getProp(arrayHandle, i);
-        arr.push(vm.getString(itemHandle));
-        itemHandle.dispose();
+async function init(): Promise<RunResult> {
+    try {
+        quickJSModule = await getJS();
+    } catch (err: any) {
+        console.error('Error initializing Javascript environment:', err);
+        return { output: [{ type: 'error', text: String(err.message) }] };
     }
-    arrayHandle.dispose();
-    return arr;
-};
+
+    return { output: [{ type: 'log', text: `Javascript ` }] };
+}
+
+async function getJS(): Promise<QuickJSWASMModule> {
+    if (quickJSModule) {
+        console.log(quickJSModule);
+        return quickJSModule;
+    }
+
+    return await newQuickJSWASMModuleFromVariant(variant);
+}
 
 async function runCode(code: string): Promise<RunResult> {
-    if (!QuickJS) {
-        QuickJS = await newQuickJSWASMModuleFromVariant(variant);
-        // Print QuickJS version
-    }
+    const js = await getJS();
 
     let interruptCycles = 0;
-    const runtime = QuickJS.newRuntime({
+    const runtime = js.newRuntime({
         interruptHandler: () => ++interruptCycles > 1024,
         moduleLoader: (moduleName): JSModuleLoadResult => {
             console.info('Tried to load module:', moduleName);
@@ -97,11 +102,20 @@ async function runCode(code: string): Promise<RunResult> {
     return runResult;
 }
 
-// function dispose(): void {
-//     if (QuickJS) {
-//         QuickJS.dispose();
-//         QuickJS = undefined as unknown as QuickJSWASMModule;
-//     }
-// }
+const extractArrayFromVM = (vm: QuickJSContext, name: string): string[] => {
+    const arrayHandle = vm.getProp(vm.global, name);
+    const arr: string[] = [];
+    const lenHandle = vm.getProp(arrayHandle, 'length');
+    const len = vm.getNumber(lenHandle);
+    lenHandle.dispose();
 
-export default { runCode, CODE_SAMPLE };
+    for (let i = 0; i < len; i++) {
+        const itemHandle = vm.getProp(arrayHandle, i);
+        arr.push(vm.getString(itemHandle));
+        itemHandle.dispose();
+    }
+    arrayHandle.dispose();
+    return arr;
+};
+
+export default { runCode, init, isReady, CODE_SAMPLE };

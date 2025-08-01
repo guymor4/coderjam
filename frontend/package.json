@@ -14,6 +14,7 @@
     },
     "dependencies": {
         "@monaco-editor/react": "^4.7.0",
+        "coderjam-shared": "file:../shared",
         "monaco-editor": "^0.48.0",
         "quickjs-emscripten": "^0.31.0",
         "react": "^19.1.0",

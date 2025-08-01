@@ -1,5 +1,4 @@
-import type { RunResult } from './runner';
-import type { OutputEntry } from '../../../backend/src/types';
+import type { RunResult, OutputEntry } from 'coderjam-shared';
 
 type Go = {
     childProcess: GoChildProcess;
@@ -64,18 +63,12 @@ const O_TRUNC = 0x200; // Truncate file to zero length
 const O_WRONLY = 0x1; // Write only
 const allPermissions = 0o777; // All permissions
 
-const CODE_SAMPLE = `\
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("Hello, World!")
-}
-`;
-
 let singletonGo: Go | undefined = undefined;
 let cmd: WebAssembly.WebAssemblyInstantiatedSource;
+
+function isReady(): boolean {
+    return singletonGo !== undefined;
+}
 
 async function init(): Promise<RunResult> {
     try {
@@ -210,4 +203,4 @@ async function runGoCommand(args: string[], printExitCode: boolean = true): Prom
 }
 
 // noinspection JSUnusedGlobalSymbols
-export default { onInit: init, runCode, runGoCommand, CODE_SAMPLE };
+export default { onInit: init, runCode, runGoCommand, isReady };

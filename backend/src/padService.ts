@@ -1,8 +1,9 @@
+import { getLanguageCodeSample, Language } from 'coderjam-shared';
 import { query } from './database';
 import {PadDB} from './types';
 import {QueryResult} from "pg";
 
-const DEFAULT_LANGUAGE = 'javascript';
+const DEFAULT_LANGUAGE: Language= 'javascript';
 
 // Creates a new pad ID short 6 digits long
 // May collide, check for existing pads
@@ -22,9 +23,10 @@ export async function createPad(): Promise<string> {
         }
     }
 
-    await query('INSERT INTO pads (id, language) VALUES ($1, $2) RETURNING *', [
+    await query('INSERT INTO pads (id, language, code) VALUES ($1, $2, $3) RETURNING *', [
         id,
         DEFAULT_LANGUAGE,
+        getLanguageCodeSample(DEFAULT_LANGUAGE),
     ]);
 
     return id;
