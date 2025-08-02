@@ -13,6 +13,7 @@ interface SelectProps {
     options: SelectOption[];
     placeholder?: string;
     className?: string;
+    disabled?: boolean;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -21,7 +22,7 @@ export const Select: React.FC<SelectProps> = ({
     options,
     placeholder = 'Select...',
     className = '',
-    ...otherProps
+    disabled = false,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const selectRef = useRef<HTMLDivElement>(null);
@@ -46,8 +47,9 @@ export const Select: React.FC<SelectProps> = ({
     };
 
     return (
-        <div ref={selectRef} className={`relative inline-block ${className}`} {...otherProps}>
+        <div ref={selectRef} className={`relative inline-block ${className}`}>
             <Button
+                disabled={disabled}
                 variant="outline"
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full justify-between min-w-[140px]"

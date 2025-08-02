@@ -1,3 +1,5 @@
+import { Language } from './languages';
+
 export type OutputEntry = {
     text: string;
     type: 'log' | 'error';
@@ -26,7 +28,7 @@ export interface PadRoom {
     padId: string;
     users: User[];
     code: string;
-    language: string;
+    language: Language;
     output: OutputEntry[];
     isRunning: boolean;
     ownerId?: string; // User ID of the pad owner who executes code

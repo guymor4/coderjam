@@ -9,14 +9,7 @@ function isReady(): boolean {
 }
 
 async function init(): Promise<RunResult> {
-    await import(window.location.origin + '/pyodide/pyodide.js');
-
-    if (!Object.hasOwn(window, 'loadPyodide')) {
-        throw new Error('Pyodide failed to load');
-    }
-
-    // @ts-expect-error dynamically imported js for now
-    pyodide = await window.loadPyodide();
+    const pyodide = await getPyodide();
     const pythonVersionStr: string = await pyodide.runPythonAsync(
         'import platform; f"{platform.python_version()} ({\' \'.join(platform.python_build())})"'
     );
@@ -29,11 +22,17 @@ async function init(): Promise<RunResult> {
 }
 
 async function getPyodide(): Promise<PyodideInterface> {
-    if (pyodide) {
-        return pyodide;
+    if (!pyodide) {
+        await import(window.location.origin + '/pyodide/pyodide.js');
+
+        if (!Object.hasOwn(window, 'loadPyodide')) {
+            throw new Error('Pyodide failed to load');
+        }
+
+        // @ts-expect-error dynamically imported js for now
+        pyodide = await window.loadPyodide();
     }
 
-    await init();
     return pyodide;
 }
 
