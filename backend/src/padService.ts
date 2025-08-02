@@ -1,5 +1,5 @@
 import { getLanguageCodeSample, Language, OutputEntry } from 'coderjam-shared';
-import { query } from './database';
+import db from './database';
 import { PadDB, PadStored } from './types';
 import {QueryResult} from "pg";
 
@@ -23,7 +23,7 @@ export async function createPad(): Promise<string> {
         }
     }
 
-    await query('INSERT INTO pads (id, language, code) VALUES ($1, $2, $3) RETURNING *', [
+    await db.query('INSERT INTO pads (id, language, code) VALUES ($1, $2, $3) RETURNING *', [
         id,
         DEFAULT_LANGUAGE,
         getLanguageCodeSample(DEFAULT_LANGUAGE),
@@ -33,7 +33,7 @@ export async function createPad(): Promise<string> {
 }
 
 export async function getPad(id: string): Promise<PadStored | undefined> {
-    const result: QueryResult<PadDB> = await query('SELECT * FROM pads WHERE id = $1', [id]);
+    const result: QueryResult<PadDB> = await db.query('SELECT * FROM pads WHERE id = $1', [id]);
     if (result.rowCount === 0 || result.rows.length === 0 || !result.rows[0]) {
         return undefined; // Pad not found
     }
@@ -59,7 +59,7 @@ export async function getPad(id: string): Promise<PadStored | undefined> {
 export async function updatePad(id: string, language: string, code: string, output: OutputEntry[]): Promise<PadDB | undefined> {
     const outputStr = JSON.stringify(output);
 
-    const result = await query(
+    const result = await db.query(
         'UPDATE pads SET language = $2, code = $3, output = $4 WHERE id = $1 RETURNING *',
         [id, language, code, outputStr]
     );
