@@ -28,6 +28,8 @@ export function PadPage() {
     const [error] = useState<Error | undefined>(undefined);
     // pad is the current state of the pad, including code, language, output, etc.
     // pad.users contains the list of users currently in the pad INCLUDING the current user
+    // pad.ownerId is the user ID of the owner who executes the code
+    // pad.isRunning indicates if the code is currently running AND whether the owner should execute it
     const [pad, setPad] = useState<PadRoom | undefined>(undefined);
     const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const [isCoderGradient, setIsCoderGradient] = useState<boolean>(true);
@@ -102,14 +104,14 @@ export function PadPage() {
                     : undefined
             );
             // Send output update if pad is defined
-            if (pad) {
+            if (pad?.padId) {
                 sendPadStateUpdate({
                     padId: pad.padId,
                     output: newOutput,
                 });
             }
         },
-        [pad, sendPadStateUpdate]
+        [pad?.padId, sendPadStateUpdate]
     );
 
     const isOwner = useMemo(() => {
@@ -120,11 +122,10 @@ export function PadPage() {
     }, [pad?.ownerId, userId]);
 
     useEffect(() => {
-        if (!currentRunner || !isOwner || currentRunner.isReady()) {
+        if (!currentRunner || !isOwner) {
             return;
         }
 
-        console.log('Initializing new runner for language:', pad?.language);
         const initRunner = async () => {
             try {
                 setInitializingRunning(true);
@@ -138,7 +139,7 @@ export function PadPage() {
         };
 
         initRunner();
-    }, [changeOutput, currentRunner, isOwner, pad?.language]);
+    }, [changeOutput, currentRunner, isOwner]);
 
     // Owner watches for isRunning changes and automatically executes code
     useEffect(() => {
@@ -183,59 +184,25 @@ export function PadPage() {
         sendPadStateUpdate,
     ]);
 
-    const runCode = useCallback(async () => {
-        if (!currentRunner || !pad) {
+    // Set isRunning to true and so signal the owner to run the code
+    const signalRunCode = useCallback(async () => {
+        if (!pad?.padId) {
             return;
         }
 
-        // Non-owner just triggers the run by setting isRunning to true
-        if (!isOwner) {
-            sendPadStateUpdate({
-                padId: pad.padId,
-                isRunning: true,
-            });
-            setPad((prevPad) =>
-                prevPad
-                    ? {
-                          ...prevPad,
-                          isRunning: true,
-                      }
-                    : undefined
-            );
-            return;
-        }
-
-        // Owner actually executes the code
-        try {
-            sendPadStateUpdate({
-                padId: pad.padId,
-                isRunning: true,
-            });
-            setPad((prevPad) =>
-                prevPad
-                    ? {
-                          ...prevPad,
-                          isRunning: true,
-                      }
-                    : undefined
-            );
-            const newOutput = await currentRunner.runCode(pad.code);
-            changeOutput([...pad.output, ...newOutput.output]);
-        } finally {
-            sendPadStateUpdate({
-                padId: pad.padId,
-                isRunning: false,
-            });
-            setPad((prevPad) =>
-                prevPad
-                    ? {
-                          ...prevPad,
-                          isRunning: false,
-                      }
-                    : undefined
-            );
-        }
-    }, [currentRunner, changeOutput, pad, sendPadStateUpdate, isOwner]);
+        sendPadStateUpdate({
+            padId: pad.padId,
+            isRunning: true,
+        });
+        setPad((prevPad) =>
+            prevPad
+                ? {
+                      ...prevPad,
+                      isRunning: true,
+                  }
+                : undefined
+        );
+    }, [pad?.padId, sendPadStateUpdate]);
 
     const changeCode = useCallback(
         (newCode: string) => {
@@ -271,7 +238,6 @@ export function PadPage() {
             }
 
             const codeSample = getLanguageCodeSample(newLanguage);
-            console.log('New language', newLanguage + ' with code sample:', codeSample);
             sendPadStateUpdate({
                 padId: pad.padId,
                 language: newLanguage,
@@ -386,6 +352,7 @@ export function PadPage() {
                                 onChange={changeLanguage}
                                 className="capitalize"
                                 data-testid="language-selector"
+                                disabled={initializingRunning || pad.isRunning}
                                 options={SUPPORTED_LANGUAGES.map((lang) => ({
                                     value: lang,
                                     label: capitalize(lang),
@@ -423,7 +390,7 @@ export function PadPage() {
                                 Running...
                             </Button>
                         ) : (
-                            <Button colorType="green" onClick={runCode}>
+                            <Button colorType="green" onClick={signalRunCode}>
                                 <svg
                                     className="w-4 h-4 mr-2"
                                     fill="currentColor"
@@ -441,7 +408,7 @@ export function PadPage() {
                             language={pad.language}
                             users={usersWithoutMe}
                             onCodeChange={changeCode}
-                            onRunClick={runCode}
+                            onRunClick={signalRunCode}
                             onClearOutput={clearOutput}
                             onCursorChange={(newCursor) => {
                                 if (pad) {

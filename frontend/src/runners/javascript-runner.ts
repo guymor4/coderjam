@@ -27,12 +27,11 @@ async function init(): Promise<RunResult> {
         return { output: [{ type: 'error', text: String(err.message) }] };
     }
 
-    return { output: [{ type: 'log', text: `Javascript ` }] };
+    return { output: [{ type: 'log', text: `QuickJS 2025-04-26 ES2023` }] };
 }
 
 async function getJS(): Promise<QuickJSWASMModule> {
     if (quickJSModule) {
-        console.log(quickJSModule);
         return quickJSModule;
     }
 

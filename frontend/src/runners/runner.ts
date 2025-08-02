@@ -22,7 +22,7 @@ export const RUNNERS: Record<string, Runner> = {
         runCode: TypescriptRunner.runCode,
     },
     go: {
-        init: GoRunner.onInit,
+        init: GoRunner.init,
         isReady: GoRunner.isReady,
         runCode: GoRunner.runCode,
     },

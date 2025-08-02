@@ -205,4 +205,4 @@ async function runGoCommand(args: string[], printExitCode: boolean = true): Prom
 }
 
 // noinspection JSUnusedGlobalSymbols
-export default { onInit: init, runCode, runGoCommand, isReady };
+export default { init, runCode, runGoCommand, isReady };
