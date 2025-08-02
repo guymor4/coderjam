@@ -24,7 +24,7 @@ const CLEAN_OUTPUT: OutputEntry[] = [{ type: 'log', text: 'Output cleared.' }];
 export function PadPage() {
     const { padId } = useParams<{ padId: string }>();
     const [isLoading] = useState<boolean>(false);
-    const [initializingRunner, setInitializingRunner] = useState<boolean>(false);
+    const [initializingRunning, setInitializingRunning] = useState<boolean>(false);
     const [error] = useState<Error | undefined>(undefined);
     // pad is the current state of the pad, including code, language, output, etc.
     // pad.users contains the list of users currently in the pad INCLUDING the current user
@@ -112,39 +112,100 @@ export function PadPage() {
         [pad, sendPadStateUpdate]
     );
 
-    useEffect(() => {
-        if (!currentRunner) {
-            console.error('No runner available for the current language:', pad?.language);
-            return;
+    const isOwner = useMemo(() => {
+        if (pad?.ownerId === undefined || !userId) {
+            return false;
         }
+        return pad.ownerId === userId;
+    }, [pad?.ownerId, userId]);
 
-        if (currentRunner.isReady()) {
-            console.log('Runner is already initialized.');
+    useEffect(() => {
+        if (!currentRunner || !isOwner || currentRunner.isReady()) {
             return;
         }
 
         console.log('Initializing new runner for language:', pad?.language);
-
         const initRunner = async () => {
             try {
-                setInitializingRunner(true);
+                setInitializingRunning(true);
                 const result = await currentRunner.init();
                 if (result) {
                     changeOutput(result.output);
                 }
             } finally {
-                setInitializingRunner(false);
+                setInitializingRunning(false);
             }
         };
 
         initRunner();
-    }, [changeOutput, currentRunner, pad?.language]);
+    }, [changeOutput, currentRunner, isOwner, pad?.language]);
+
+    // Owner watches for isRunning changes and automatically executes code
+    useEffect(() => {
+        if (!isOwner || !currentRunner || !pad || !pad.isRunning) {
+            return;
+        }
+
+        // If we're the owner and isRunning is true, execute the code
+        const executeCode = async () => {
+            try {
+                console.log('Owner executing code automatically...');
+                const newOutput = await currentRunner.runCode(pad.code);
+                changeOutput([...pad.output, ...newOutput.output]);
+            } catch (error) {
+                console.error('Error running code as owner:', error);
+            } finally {
+                // Always set isRunning to false when done
+                sendPadStateUpdate({
+                    padId: pad.padId,
+                    isRunning: false,
+                });
+                setPad((prevPad) =>
+                    prevPad
+                        ? {
+                              ...prevPad,
+                              isRunning: false,
+                          }
+                        : undefined
+                );
+            }
+        };
+
+        executeCode();
+    }, [
+        isOwner,
+        currentRunner,
+        pad?.isRunning,
+        pad?.code,
+        pad?.padId,
+        pad?.output,
+        changeOutput,
+        sendPadStateUpdate,
+    ]);
 
     const runCode = useCallback(async () => {
         if (!currentRunner || !pad) {
             return;
         }
 
+        // Non-owner just triggers the run by setting isRunning to true
+        if (!isOwner) {
+            sendPadStateUpdate({
+                padId: pad.padId,
+                isRunning: true,
+            });
+            setPad((prevPad) =>
+                prevPad
+                    ? {
+                          ...prevPad,
+                          isRunning: true,
+                      }
+                    : undefined
+            );
+            return;
+        }
+
+        // Owner actually executes the code
         try {
             sendPadStateUpdate({
                 padId: pad.padId,
@@ -174,7 +235,7 @@ export function PadPage() {
                     : undefined
             );
         }
-    }, [currentRunner, changeOutput, pad, sendPadStateUpdate]);
+    }, [currentRunner, changeOutput, pad, sendPadStateUpdate, isOwner]);
 
     const changeCode = useCallback(
         (newCode: string) => {
@@ -204,23 +265,24 @@ export function PadPage() {
                 return;
             }
 
-            const newRunner = RUNNERS[newLanguage];
-            if (!newRunner) {
+            if (!isValidLanguage(newLanguage)) {
                 console.error(`Unsupported language: ${newLanguage}`);
                 return;
             }
 
+            const codeSample = getLanguageCodeSample(newLanguage);
+            console.log('New language', newLanguage + ' with code sample:', codeSample);
             sendPadStateUpdate({
                 padId: pad.padId,
                 language: newLanguage,
-                code: getLanguageCodeSample(newLanguage),
+                code: codeSample,
             });
             setPad((prevPad) =>
                 prevPad
                     ? {
                           ...prevPad,
                           language: newLanguage,
-                          code: getLanguageCodeSample(newLanguage),
+                          code: codeSample,
                       }
                     : undefined
             );
@@ -254,7 +316,9 @@ export function PadPage() {
     if (isLoading || !pad) {
         return (
             <div className="flex w-screen h-screen bg-dark-950 text-dark-100 items-center justify-center">
-                <div className="text-lg">Loading pad...</div>
+                <div className="text-lg" data-testid="loading-pad">
+                    Loading pad...
+                </div>
             </div>
         );
     }
@@ -278,7 +342,10 @@ export function PadPage() {
     }
 
     return (
-        <div className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100">
+        <div
+            className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100"
+            data-testid="pad-loaded"
+        >
             <div className="flex grow">
                 {/* Left side panel: Pad editor and controls */}
                 <div className="flex-1 flex flex-col">
@@ -311,11 +378,14 @@ export function PadPage() {
                                     Jam
                                 </span>
                             </h1>
-                            <div className="text-sm text-dark-300">{padId}</div>
+                            <div className="text-sm text-dark-300" data-testid="pad-id">
+                                {padId}
+                            </div>
                             <Select
                                 value={pad.language || 'javascript'}
                                 onChange={changeLanguage}
                                 className="capitalize"
+                                data-testid="language-selector"
                                 options={SUPPORTED_LANGUAGES.map((lang) => ({
                                     value: lang,
                                     label: capitalize(lang),
@@ -329,7 +399,7 @@ export function PadPage() {
                                 }))}
                             />
                         </div>
-                        {initializingRunner || pad.isRunning ? (
+                        {initializingRunning || pad.isRunning ? (
                             <Button disabled colorType="default">
                                 <svg
                                     className="w-4 h-4 mr-2 animate-spin"
@@ -405,7 +475,10 @@ export function PadPage() {
                             Clear
                         </Button>
                     </div>
-                    <div className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm">
+                    <div
+                        data-testid="output"
+                        className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
+                    >
                         {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
                             <div
                                 key={index}
@@ -424,14 +497,16 @@ export function PadPage() {
                 <div className="flex items-center gap-2">
                     <div className="flex gap-1">
                         {usersWithoutMe.length === 0 && (
-                            <div className="text-sm text-gray-500">Just you here</div>
+                            <div className="text-sm text-gray-400">Just you here</div>
                         )}
                         {usersWithoutMe.slice(0, 10).map((user) => (
                             <div className="flex items-center gap-2" key={user.id}>
                                 <div
                                     className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
                                 ></div>
-                                <span className="text-sm text-dark-300">{user.name}</span>
+                                <span className="text-sm text-dark-200">
+                                    {user.name} {user.id === pad?.ownerId ? '(Code runner)' : ''}
+                                </span>
                             </div>
                         ))}
                         {usersWithoutMe.length > 10 && (
@@ -459,6 +534,14 @@ export function PadPage() {
                     <div>
                         <span className="text-sm text-dark-300">
                             {isConnected ? 'Connected' : 'Disconnected'}
+                            {isOwner && isConnected && (
+                                <span
+                                    className="ml-2 text-yellow-400"
+                                    title="You are the code executor"
+                                >
+                                    👑
+                                </span>
+                            )}
                         </span>
                     </div>
                 </div>

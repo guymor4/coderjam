@@ -29,6 +29,7 @@ export interface PadRoom {
     language: string;
     output: OutputEntry[];
     isRunning: boolean;
+    ownerId?: string; // User ID of the pad owner who executes code
 }
 
 // Update of a pad state, received from the client

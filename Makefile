@@ -40,9 +40,13 @@ clean:
 install:
 	yarn install
 
-# Testing
+# Test unit tests
 test:
 	yarn test
+
+# Test end-to-end tests
+test-e2e:
+	yarn test:e2e
 
 # Linting
 lint:
