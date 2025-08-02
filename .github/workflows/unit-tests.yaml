@@ -21,7 +21,7 @@ jobs:
         cache: 'yarn'
 
     - name: Install dependencies
-      run: make install
+      run: yarn install --immutable
 
     - name: Run linting
       run: make lint

@@ -36,7 +36,7 @@ jobs:
         cache: 'yarn'
 
     - name: Install dependencies
-      run: make install
+      run: yarn install --immutable
 
     - name: Setup database environment
       run: |
