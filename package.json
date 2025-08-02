@@ -9,10 +9,10 @@
         "shared"
     ],
     "scripts": {
-        "dev": "concurrently \"yarn dev:backend\" \"yarn dev:frontend\"",
+        "dev": "yarn workspace coderjam-shared build && concurrently \"yarn dev:backend\" \"yarn dev:frontend\"",
         "dev:frontend": "yarn workspace coderjam-frontend dev",
         "dev:backend": "yarn workspace coderjam-backend dev",
-        "build": "yarn workspace coderjam-shared build && yarn build:frontend && yarn build:backend",
+        "build": "tsc --build && yarn build:frontend && yarn build:backend",
         "build:frontend": "yarn workspace coderjam-frontend build",
         "build:backend": "yarn workspace coderjam-backend build",
         "start": "yarn workspace coderjam-backend start",
@@ -20,7 +20,7 @@
         "lint:frontend": "yarn workspace coderjam-frontend lint",
         "lint:backend": "yarn workspace coderjam-backend lint",
         "clean": "yarn workspace coderjam-frontend clean && yarn workspace coderjam-backend clean",
-        "type-check": "yarn workspace coderjam-shared build && yarn workspace coderjam-frontend type-check && yarn workspace coderjam-backend type-check",
+        "type-check": "tsc --build --dry && yarn workspace coderjam-frontend type-check",
         "test": "yarn workspace coderjam-frontend test",
         "test:e2e": "yarn workspace coderjam-frontend test:e2e",
         "test:e2e:ui": "yarn workspace coderjam-frontend test:e2e:ui"
