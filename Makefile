@@ -43,6 +43,7 @@ install:
 # Testing
 test:
 	yarn test
+    yarn test:e2e
 
 # Linting
 lint:
