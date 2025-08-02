@@ -316,7 +316,9 @@ export function PadPage() {
     if (isLoading || !pad) {
         return (
             <div className="flex w-screen h-screen bg-dark-950 text-dark-100 items-center justify-center">
-                <div className="text-lg">Loading pad...</div>
+                <div className="text-lg" data-testid="loading-pad">
+                    Loading pad...
+                </div>
             </div>
         );
     }
@@ -340,7 +342,10 @@ export function PadPage() {
     }
 
     return (
-        <div className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100">
+        <div
+            className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100"
+            data-testid="pad-loaded"
+        >
             <div className="flex grow">
                 {/* Left side panel: Pad editor and controls */}
                 <div className="flex-1 flex flex-col">
@@ -373,11 +378,14 @@ export function PadPage() {
                                     Jam
                                 </span>
                             </h1>
-                            <div className="text-sm text-dark-300">{padId}</div>
+                            <div className="text-sm text-dark-300" data-testid="pad-id">
+                                {padId}
+                            </div>
                             <Select
                                 value={pad.language || 'javascript'}
                                 onChange={changeLanguage}
                                 className="capitalize"
+                                data-testid="language-selector"
                                 options={SUPPORTED_LANGUAGES.map((lang) => ({
                                     value: lang,
                                     label: capitalize(lang),
@@ -467,7 +475,10 @@ export function PadPage() {
                             Clear
                         </Button>
                     </div>
-                    <div className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm">
+                    <div
+                        data-testid="output"
+                        className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
+                    >
                         {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
                             <div
                                 key={index}

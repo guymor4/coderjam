@@ -20,7 +20,9 @@
         "lint:frontend": "yarn workspace coderjam-frontend lint",
         "lint:backend": "yarn workspace coderjam-backend lint",
         "clean": "yarn workspace coderjam-frontend clean && yarn workspace coderjam-backend clean",
-        "type-check": "yarn workspace coderjam-frontend type-check && yarn workspace coderjam-backend type-check"
+        "type-check": "yarn workspace coderjam-frontend type-check && yarn workspace coderjam-backend type-check",
+        "test:e2e": "yarn workspace coderjam-frontend test:e2e",
+        "test:e2e:ui": "yarn workspace coderjam-frontend test:e2e:ui"
     },
     "devDependencies": {
         "concurrently": "^9.1.0"

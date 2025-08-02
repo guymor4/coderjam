@@ -13,11 +13,3 @@ Object.defineProperty(window, 'location', {
     },
     writable: true,
 });
-
-// Setup console mocks to reduce noise in tests
-global.console = {
-    ...console,
-    log: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-};
