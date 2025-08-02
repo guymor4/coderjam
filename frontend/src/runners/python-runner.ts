@@ -51,10 +51,11 @@ async function runCode(code: string): Promise<RunResult> {
     pyodide.setStderr({ batched: addStderr });
     try {
         await pyodide.runPythonAsync(code);
-    } catch (error: any) {
-        console.error('Pyodide error:', error);
+    } catch (errRaw: unknown) {
+        const err = errRaw as Error;
+        console.error('Pyodide error:', err);
         outputEntries.push({
-            text: `${error.name}: ${error.message}`,
+            text: `${err.name}: ${err.message}`,
             type: 'error',
         });
     }

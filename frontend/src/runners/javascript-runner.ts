@@ -21,7 +21,8 @@ function isReady(): boolean {
 async function init(): Promise<RunResult> {
     try {
         quickJSModule = await getJS();
-    } catch (err: any) {
+    } catch (errRaw: unknown) {
+        const err = errRaw as Error;
         console.error('Error initializing Javascript environment:', err);
         return { output: [{ type: 'error', text: String(err.message) }] };
     }

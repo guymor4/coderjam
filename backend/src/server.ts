@@ -1,11 +1,11 @@
-import express from 'express';
+import express, { Express } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { createServer as createHttpServer } from 'http';
 import { setupRoutes } from './routes';
 import { setupSocketServer } from './collaborationSocketServer';
 
-export function createServer() {
+export function createServer(): Express {
     const app = express();
     const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -44,7 +44,7 @@ export function createServer() {
     return app;
 }
 
-export function main() {
+export function main(): void {
     // Create HTTP server
     const PORT = process.env.PORT || 3001;
     const app = createServer();

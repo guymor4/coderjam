@@ -20,6 +20,7 @@ vi.mock('socket.io-client', () => ({
 }));
 
 // Test component that uses the hook
+// eslint-disable-next-line react-refresh/only-export-components
 function TestCollaborationComponent() {
     const [padState, setPadState] = useState<PadStateUpdated | undefined>(undefined);
     const [userName, setUserName] = useState('');

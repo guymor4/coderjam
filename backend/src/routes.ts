@@ -1,19 +1,19 @@
 import express from 'express';
 import path from 'path';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { createPad, getPad, updatePad } from './padService';
+import { createPad } from './padService';
 
-export function setupRoutes(app: express.Application) {
+export function setupRoutes(app: express.Application): void {
     const VITE_DEV_SERVER = process.env.VITE_DEV_SERVER || 'http://localhost:5173';
     const isDevelopment = process.env.NODE_ENV !== 'production';
 
     // Health check endpoint
     app.get('/api/health', (_req, res) => {
-        res.json({ 
-            status: 'ok', 
+        res.json({
+            status: 'ok',
             timestamp: new Date().toISOString(),
             environment: process.env.NODE_ENV || 'development',
-            viteProxy: isDevelopment ? VITE_DEV_SERVER : 'disabled'
+            viteProxy: isDevelopment ? VITE_DEV_SERVER : 'disabled',
         });
     });
 
@@ -50,8 +50,8 @@ export function setupRoutes(app: express.Application) {
                 error: (err) => {
                     console.log('Vite proxy error:', err.message);
                     console.log('Make sure Vite dev server is running on', VITE_DEV_SERVER);
-                }
-            }
+                },
+            },
         });
 
         // "express.static" alternative in development, proxies all non-API routes to Vite
@@ -66,7 +66,7 @@ export function setupRoutes(app: express.Application) {
         // Production: Serve static files from React build
         const frontendDistPath = path.join(__dirname, '../../public');
         app.use(express.static(frontendDistPath));
-        
+
         // Handle React Router routes
         app.get('*', (_req, res) => {
             res.sendFile(path.join(frontendDistPath, 'index.html'));
