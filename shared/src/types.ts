@@ -38,7 +38,7 @@ export interface PadRoom {
 export interface PadStateUpdate {
     padId: string;
     code?: string;
-    language?: string;
+    language?: Language;
     cursor?: User['cursor'];
     isRunning?: boolean;
     output?: OutputEntry[];

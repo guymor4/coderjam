@@ -11,7 +11,17 @@ function generatePadId(): string {
     return Math.random().toString(36).substring(2, 8);
 }
 
-export async function createPad(): Promise<string> {
+// Generates a cryptographically secure random key for pad access
+function generatePadKey(): string {
+    // Generate 32 random bytes and encode as base64
+    const randomBytes = new Uint8Array(32);
+    for (let i = 0; i < randomBytes.length; i++) {
+        randomBytes[i] = Math.floor(Math.random() * 256);
+    }
+    return Buffer.from(randomBytes).toString('base64url');
+}
+
+export async function createPad(): Promise<{ id: string; key: string }> {
     let id = generatePadId();
     let count = 0;
     // Check if pad with this ID already exists
@@ -23,13 +33,16 @@ export async function createPad(): Promise<string> {
         }
     }
 
-    await db.query('INSERT INTO pads (id, language, code) VALUES ($1, $2, $3) RETURNING *', [
+    const key = generatePadKey();
+    const codeSample = getLanguageCodeSample(DEFAULT_LANGUAGE);
+    await db.query('INSERT INTO pads (id, key, language, code) VALUES ($1, $2, $3, $4) RETURNING *', [
         id,
+        key,
         DEFAULT_LANGUAGE,
-        getLanguageCodeSample(DEFAULT_LANGUAGE),
+        codeSample,
     ]);
 
-    return id;
+    return { id, key };
 }
 
 export async function getPad(id: string): Promise<PadStored | undefined> {
@@ -43,8 +56,9 @@ export async function getPad(id: string): Promise<PadStored | undefined> {
 
     var output: OutputEntry[] = [];
     try {
-        output = JSON.parse(padDB.output ?? '[]') as OutputEntry[];
+        output = JSON.parse(padDB.output || '[]') as OutputEntry[];
     } catch (error) {
+        // Log and return an empty output
         console.error('Failed to parse pad output:', error);
     }
 
@@ -54,6 +68,16 @@ export async function getPad(id: string): Promise<PadStored | undefined> {
         language: padDB.language,
         output: output,
     }
+}
+
+export async function verifyPadKey(id: string, key: string): Promise<boolean> {
+    const result: QueryResult<{ key: string }> = await db.query('SELECT key FROM pads WHERE id = $1', [id]);
+    if (result.rowCount === 0 || result.rows.length === 0 || !result.rows[0]) {
+        return false; // Pad not found
+    }
+    
+    const pad = result.rows[0];
+    return pad.key === key;
 }
 
 export async function updatePad(id: string, language: string, code: string, output: OutputEntry[]): Promise<PadDB | undefined> {

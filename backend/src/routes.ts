@@ -22,9 +22,10 @@ export function setupRoutes(app: express.Application): void {
     // Create a new pad
     app.post('/api/pad', async (_req, res) => {
         try {
-            const newPadId = await createPad();
+            const { id, key } = await createPad();
             res.json({
-                id: newPadId,
+                id,
+                key,
             });
         } catch (error) {
             console.error('Error creating pad:', error);

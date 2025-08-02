@@ -1,6 +1,7 @@
 -- Initialize CoderJam database
 CREATE TABLE IF NOT EXISTS pads (
     id VARCHAR(6) PRIMARY KEY,
+    key VARCHAR(64) NOT NULL,
     language VARCHAR(50) NOT NULL,
     code TEXT NOT NULL DEFAULT '',
     output TEXT NOT NULL DEFAULT '',

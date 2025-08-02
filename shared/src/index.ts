@@ -1,5 +1,4 @@
-// Re-export all types and interfaces
+// Re-export all
 export * from './types';
-
-// Re-export language-related exports
 export * from './languages';
+export * from './errors';

@@ -7,6 +7,7 @@ export interface PadDB {
      */
 
     id: string;
+    key: string;
     language: Language;
     code: string;
     output: string;

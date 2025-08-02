@@ -6,6 +6,7 @@ import { Select } from './components/Select';
 import { Button } from './components/Button';
 import { useCollaboration } from './hooks/useCollaboration';
 import {
+    BAD_KEY_ERROR,
     capitalize,
     getLanguageCodeSample,
     isValidLanguage,
@@ -23,9 +24,11 @@ const CLEAN_OUTPUT: OutputEntry[] = [{ type: 'log', text: 'Output cleared.' }];
 
 export function PadPage() {
     const { padId } = useParams<{ padId: string }>();
+    const searchParams = new URLSearchParams(window.location.search);
+    const key = searchParams.get('key');
     const [isLoading] = useState<boolean>(false);
     const [initializingRunning, setInitializingRunning] = useState<boolean>(false);
-    const [error] = useState<Error | undefined>(undefined);
+    const [error, setError] = useState<string | undefined>(undefined);
     // pad is the current state of the pad, including code, language, output, etc.
     // pad.users contains the list of users currently in the pad INCLUDING the current user
     // pad.ownerId is the user ID of the owner who executes the code
@@ -36,57 +39,51 @@ export function PadPage() {
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
 
     // Setup collaboration hook
-    const {
-        isConnected,
-        userId,
-        joinPad,
-        leavePad,
-        sendPadStateUpdate,
-        sendRenameUpdate,
-        error: collaborationError,
-    } = useCollaboration({
-        onPadStateUpdated: (data) => {
-            console.log('Received pad state via hook:', data);
-            console.assert(data.users?.length > 0, 'Users field should not be empty');
-            console.assert(
-                !data.language || isValidLanguage(data.language),
-                "Language '" +
-                    data.language +
-                    "' should be one of: " +
-                    SUPPORTED_LANGUAGES.join(', ')
-            );
-            setPad((prevPad) =>
-                prevPad === undefined ? data : Object.assign({ ...prevPad }, data)
-            );
-        },
-        onError: (error) => {
-            console.error('Collaboration error:', error);
-        },
-        onUserRenamed: (data) => {
-            console.log('Received user renamed:', data, pad?.users);
-            setPad((prevPad) => {
-                if (!prevPad) return prevPad;
-                const updatedUsers = prevPad.users.map((user) =>
-                    user.id === data.userId ? { ...user, name: data.newName } : user
+    const { isConnected, userId, joinPad, leavePad, sendPadStateUpdate, sendRenameUpdate } =
+        useCollaboration({
+            onPadStateUpdated: (data) => {
+                console.log('Received pad state via hook:', data);
+                console.assert(data.users?.length > 0, 'Users field should not be empty');
+                console.assert(
+                    !data.language || isValidLanguage(data.language),
+                    "Language '" +
+                        data.language +
+                        "' should be one of: " +
+                        SUPPORTED_LANGUAGES.join(', ')
                 );
-                console.log(updatedUsers);
-                return { ...prevPad, users: updatedUsers };
-            });
-        },
-    });
+                setPad((prevPad) =>
+                    prevPad === undefined ? data : Object.assign({ ...prevPad }, data)
+                );
+            },
+            onError: (error) => {
+                console.error('Collaboration error:', error);
+                setError(error);
+            },
+            onUserRenamed: (data) => {
+                console.log('Received user renamed:', data, pad?.users);
+                setPad((prevPad) => {
+                    if (!prevPad) return prevPad;
+                    const updatedUsers = prevPad.users.map((user) =>
+                        user.id === data.userId ? { ...user, name: data.newName } : user
+                    );
+                    console.log(updatedUsers);
+                    return { ...prevPad, users: updatedUsers };
+                });
+            },
+        });
 
     // Join pad room when padId changes
     useEffect(() => {
-        if (!padId || !isConnected) {
+        if (!padId || !isConnected || !key) {
             return;
         }
 
-        joinPad(padId, username);
+        joinPad(padId, username, key);
         return () => leavePad();
 
         // `username` should not be a dependency here
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [padId, isConnected, joinPad, leavePad]);
+    }, [padId, key, isConnected, joinPad, leavePad]);
 
     const usersWithoutMe = useMemo(() => {
         if (!pad) return [];
@@ -279,11 +276,11 @@ export function PadPage() {
         return <Navigate to="/" />;
     }
 
-    if (isLoading || !pad) {
+    if (!key || error === BAD_KEY_ERROR.message) {
         return (
             <div className="flex w-screen h-screen bg-dark-950 text-dark-100 items-center justify-center">
-                <div className="text-lg" data-testid="loading-pad">
-                    Loading pad...
+                <div className="text-lg text-red-400">
+                    Access denied: Invalid or missing pad key
                 </div>
             </div>
         );
@@ -292,17 +289,17 @@ export function PadPage() {
     if (error) {
         return (
             <div className="flex w-screen h-screen bg-dark-950 text-dark-100 items-center justify-center">
-                <div className="text-lg text-red-400">
-                    Error: {error.name}: {error.message}
-                </div>
+                <div className="text-lg text-red-400">Error: {error}</div>
             </div>
         );
     }
 
-    if (collaborationError) {
+    if (isLoading || !pad) {
         return (
             <div className="flex w-screen h-screen bg-dark-950 text-dark-100 items-center justify-center">
-                <div className="text-lg text-red-400">Collaboration Error: {error}</div>
+                <div className="text-lg" data-testid="loading-pad">
+                    Loading pad...
+                </div>
             </div>
         );
     }

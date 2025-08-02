@@ -10,11 +10,11 @@ export function HomePage() {
 
         const createPadAndRedirect = async () => {
             try {
-                const newId = await createPad();
-                if (!newId || !newId.id) {
+                const response = await createPad();
+                if (!response || !response.id || !response.key) {
                     throw new Error('Failed to create a new pad: invalid response');
                 }
-                window.location.href = `/p/${newId.id}`;
+                window.location.href = `/p/${response.id}?key=${encodeURIComponent(response.key)}`;
             } catch (err: unknown) {
                 console.error('Failed to create a new pad', err);
                 setError(err as Error);

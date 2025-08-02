@@ -1,7 +1,15 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
-import { getPad, updatePad } from './padService';
-import { PadRoom, PadStateUpdate, PadStateUpdated, User, UserRename, UserRenamed } from 'coderjam-shared';
+import { getPad, updatePad, verifyPadKey } from './padService';
+import {
+    BAD_KEY_ERROR, PAD_NOT_FOUND_ERROR,
+    PadRoom,
+    PadStateUpdate,
+    PadStateUpdated,
+    User,
+    UserRename,
+    UserRenamed,
+} from 'coderjam-shared';
 
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
@@ -18,14 +26,21 @@ export function setupSocketServer(httpServer: HTTPServer): void {
     io.on('connection', (socket) => {
         console.log(`User connected: ${socket.id}`);
 
-        socket.on('join_pad', async (data: { padId: string; userName: string }) => {
-            const { padId, userName } = data;
+        socket.on('join_pad', async (data: { padId: string; userName: string; key: string }) => {
+            const { padId, userName, key } = data;
 
             try {
                 // Verify pad exists
                 const pad = await getPad(padId);
                 if (!pad) {
-                    socket.emit('error', { message: 'Pad not found' });
+                    socket.emit('error', PAD_NOT_FOUND_ERROR);
+                    return;
+                }
+
+                // Verify pad key
+                const isValidKey = await verifyPadKey(padId, key);
+                if (!isValidKey) {
+                    socket.emit('error', BAD_KEY_ERROR);
                     return;
                 }
 
