@@ -20,12 +20,6 @@ jobs:
         node-version: '20'
         cache: 'yarn'
 
-    - name: Build shared package first
-      run: |
-        cd shared
-        yarn install
-        yarn build
-        
     - name: Install dependencies
       run: yarn install --frozen-lockfile
 
