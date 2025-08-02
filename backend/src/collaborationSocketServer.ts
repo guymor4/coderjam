@@ -14,10 +14,56 @@ import {
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
 
+// Track authorized users per pad: socketId -> { padId, authorizedAt }
+const authorizedUsers = new Map<string, { padId: string; authorizedAt: Date }>();
+
+// Check if user is authorized for a specific pad
+// if user is not authorized, they must provide a valid key
+// if user is authorized, they can access the pad without a key for 24 hours
+async function authorizeUserForPad(socketId: string, padId: string, key?: string): Promise<boolean> {
+    const authData = authorizedUsers.get(socketId);
+    
+    // If user is not in authorized list, they must provide a valid key
+    if (!authData || authData.padId !== padId) {
+        if (!key) {
+            return false;
+        }
+        const authorized = await verifyPadKey(padId, key)
+        if (!authorized) {
+            return false;
+        }
+
+        console.log(`User ${socketId} authorized for pad ${padId}`);
+        authorizedUsers.set(socketId, { padId, authorizedAt: new Date() });
+        return true;
+    }
+    
+    // Check if authorization is still recent (optional: expire after some time)
+    const hoursSinceAuth = (Date.now() - authData.authorizedAt.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceAuth > 24) { // Expire after 24 hours
+        authorizedUsers.delete(socketId);
+        return false;
+    }
+
+
+    // Record authorization
+    authorizedUsers.set(socketId, { padId, authorizedAt: new Date() });
+    return true;
+}
+
+// Sanitize user input
+function sanitizeUserName(name: string): string {
+    return name.replace(/[<>"'&]/g, '').substring(0, 50).trim();
+}
+
+function validatePadId(padId: string): boolean {
+    return /^[a-zA-Z0-9]{6}$/.test(padId);
+}
+
 export function setupSocketServer(httpServer: HTTPServer): void {
     const io = new SocketIOServer(httpServer, {
         cors: {
-            origin: process.env.NODE_ENV !== 'production' ? true : ['https://yourdomain.com'],
+            origin: process.env.NODE_ENV !== 'production' ? true : ['https://coderjam.com'],
             methods: ['GET', 'POST'],
             credentials: true,
         },
@@ -30,17 +76,23 @@ export function setupSocketServer(httpServer: HTTPServer): void {
             const { padId, userName, key } = data;
 
             try {
+                // Validate input
+                if (!validatePadId(padId)) {
+                    socket.emit('error', { message: 'Invalid pad ID format' });
+                    return;
+                }
+
+                // Verify user is authorized for this pad
+                const isAuthorized = await authorizeUserForPad(socket.id, padId, key);
+                if (!isAuthorized) {
+                    socket.emit('error', BAD_KEY_ERROR);
+                    return;
+                }
+
                 // Verify pad exists
                 const pad = await getPad(padId);
                 if (!pad) {
                     socket.emit('error', PAD_NOT_FOUND_ERROR);
-                    return;
-                }
-
-                // Verify pad key
-                const isValidKey = await verifyPadKey(padId, key);
-                if (!isValidKey) {
-                    socket.emit('error', BAD_KEY_ERROR);
                     return;
                 }
 
@@ -70,7 +122,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
 
                 const user: User = {
                     id: socket.id,
-                    name: userName,
+                    name: sanitizeUserName(userName),
                 };
 
                 // Add user to the room
@@ -105,6 +157,19 @@ export function setupSocketServer(httpServer: HTTPServer): void {
         socket.on(
             'pad_state_update',
             async ({ padId, code, cursor, language, output, isRunning }: PadStateUpdate) => {
+                // Validate input
+                if (!validatePadId(padId)) {
+                    socket.emit('error', { message: 'Invalid pad ID format' });
+                    return;
+                }
+
+                // Verify user is still authorized for this pad
+                const isAuthorized = await authorizeUserForPad(socket.id, padId);
+                if (!isAuthorized) {
+                    socket.emit('error', { message: 'Unauthorized: Invalid access to pad' });
+                    return;
+                }
+
                 const room = padRoomsById.get(padId);
                 if (!room) {
                     console.warn(`Pad room not found for padId: ${padId}`);
@@ -161,6 +226,19 @@ export function setupSocketServer(httpServer: HTTPServer): void {
         socket.on(
             'user_rename',
             async ({ padId, newName }: UserRename) => {
+                // Validate input
+                if (!validatePadId(padId)) {
+                    socket.emit('error', { message: 'Invalid pad ID format' });
+                    return;
+                }
+
+                // Verify user is still authorized for this pad
+                const isAuthorized = await authorizeUserForPad(socket.id, padId);
+                if (!isAuthorized) {
+                    socket.emit('error', { message: 'Unauthorized: Invalid access to pad' });
+                    return;
+                }
+
                 const room = padRoomsById.get(padId);
                 if (!room) {
                     console.warn(`Pad room not found for padId: ${padId}`);
@@ -174,7 +252,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                 }
 
                 try {
-                    user.name = newName;
+                    user.name = sanitizeUserName(newName);
 
                     // Broadcast to other users in the room
                     socket.to(padId).emit('user_renamed', {
@@ -189,6 +267,9 @@ export function setupSocketServer(httpServer: HTTPServer): void {
         );
 
         socket.on('disconnect', () => {
+            // Clean up authorization record
+            authorizedUsers.delete(socket.id);
+            
             // Remove user from all pad rooms
             for (const [padId, room] of padRoomsById.entries()) {
                 const userIndex = room.users.findIndex(u => u.id === socket.id)

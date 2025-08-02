@@ -66,7 +66,6 @@ export function PadPage() {
                     const updatedUsers = prevPad.users.map((user) =>
                         user.id === data.userId ? { ...user, name: data.newName } : user
                     );
-                    console.log(updatedUsers);
                     return { ...prevPad, users: updatedUsers };
                 });
             },

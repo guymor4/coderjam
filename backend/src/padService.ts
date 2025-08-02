@@ -52,7 +52,6 @@ export async function getPad(id: string): Promise<PadStored | undefined> {
     }
 
     const padDB = result.rows[0];
-    console.warn(padDB.output)
 
     var output: OutputEntry[] = [];
     try {
