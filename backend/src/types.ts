@@ -1,5 +1,5 @@
 // Represents a pad in the DB
-import { PadRoom } from 'coderjam-shared';
+import { Language, PadRoom } from 'coderjam-shared';
 
 export interface PadDB {
     /*
@@ -7,7 +7,7 @@ export interface PadDB {
      */
 
     id: string;
-    language: string;
+    language: Language;
     code: string;
     output: string;
     created_at: Date;

@@ -7,14 +7,14 @@ interface SelectOption {
     icon?: React.ReactNode;
 }
 
-interface SelectProps {
+export type SelectProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'className' | 'onChange'> & {
     value: string;
     onChange: (value: string) => void;
     options: SelectOption[];
     placeholder?: string;
     className?: string;
     disabled?: boolean;
-}
+};
 
 export const Select: React.FC<SelectProps> = ({
     value,
@@ -23,6 +23,7 @@ export const Select: React.FC<SelectProps> = ({
     placeholder = 'Select...',
     className = '',
     disabled = false,
+    ...otherProps
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const selectRef = useRef<HTMLDivElement>(null);
@@ -47,7 +48,7 @@ export const Select: React.FC<SelectProps> = ({
     };
 
     return (
-        <div ref={selectRef} className={`relative inline-block ${className}`}>
+        <div {...otherProps} ref={selectRef} className={`relative inline-block ${className}`}>
             <Button
                 disabled={disabled}
                 variant="outline"

@@ -138,8 +138,7 @@ export function PadPage() {
             }
         };
 
-        const initPromise = initRunner();
-        return () => {};
+        initRunner();
     }, [changeOutput, currentRunner, isOwner]);
 
     // Owner watches for isRunning changes and automatically executes code

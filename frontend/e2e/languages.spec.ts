@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page, Locator } from '@playwright/test';
 
 // Test data for each supported language with simple code that should not error
 const LANGUAGE_TEST_DATA = {
@@ -31,9 +31,14 @@ console.log(greet('World'));`,
     //     },
 };
 
+const getRunButton = (page: Page) => page.getByRole('button', { name: /run/i }).first();
+const getLanguageSelect = (page: Page) =>
+    page.locator('[data-testid="language-selector"] button').first();
+const getLanguageOption = (languageSelect: Locator, language: string) =>
+    languageSelect.locator('..').locator(`button:has-text("${language}")`).last();
+
 test.describe('Language Execution Tests', () => {
-    // Helper function to wait for pad to be ready and set language
-    async function waitForPadLoaded(page: Page) {
+    async function setupPageAndWaitForLoad(page: Page) {
         await page.goto(`/`);
         await page.waitForLoadState('networkidle');
 
@@ -61,18 +66,19 @@ test.describe('Language Execution Tests', () => {
             timeout: 15000,
         });
 
-        const languageSelector = page.locator('[data-testid="language-selector"]');
-        await expect(languageSelector).toBeAttached();
+        const languageSelector = getLanguageSelect(page);
+        await expect(languageSelector).toBeEnabled();
         await languageSelector.click();
         await page.waitForTimeout(500); // Wait for dropdown to open
 
-        await languageSelector.locator(`button:has-text("${language}")`).last().click();
-    }
+        await getLanguageOption(languageSelector, language).click();
 
+        await expect(languageSelector).toBeEnabled();
+    }
     // Test each language for basic functionality
     Object.entries(LANGUAGE_TEST_DATA).forEach(([language, testData]) => {
         test(`should execute ${language} code without throwing errors`, async ({ page }) => {
-            await waitForPadLoaded(page);
+            await setupPageAndWaitForLoad(page);
 
             try {
                 await switchLanguage(page, language);
@@ -86,7 +92,7 @@ test.describe('Language Execution Tests', () => {
                 await page.keyboard.insertText(testData.code);
 
                 // Find and click run button
-                const runButton = page.getByRole('button', { name: /run/i }).first();
+                const runButton = getRunButton(page);
                 await runButton.click();
                 await expect(runButton).toBeEnabled({ timeout: 3000 });
                 // Wait for execution to complete
@@ -110,7 +116,7 @@ test.describe('Language Execution Tests', () => {
     });
 
     test('should handle rapid language switching without errors', async ({ page }) => {
-        await waitForPadLoaded(page);
+        await setupPageAndWaitForLoad(page);
 
         const languages = Object.keys(LANGUAGE_TEST_DATA);
 
@@ -119,6 +125,7 @@ test.describe('Language Execution Tests', () => {
             await switchLanguage(page, lang);
 
             const outputText = await page.locator('[data-testid="output"]').textContent();
+            expect(outputText.length).toBeGreaterThan(0);
             expect(outputText).not.toContain('Error');
             expect(outputText).not.toContain('error');
             expect(outputText).not.toContain('Exception');
