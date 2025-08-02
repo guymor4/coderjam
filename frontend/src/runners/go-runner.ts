@@ -74,7 +74,8 @@ async function init(): Promise<RunResult> {
     try {
         await getGo();
         return await runGoCommand(['version'], false);
-    } catch (err: any) {
+    } catch (errRaw: unknown) {
+        const err = errRaw as Error;
         console.error('Error initializing Go environment:', err);
         return { output: [{ type: 'error', text: String(err.message) }] };
     }
@@ -156,7 +157,8 @@ async function runCode(code: string): Promise<RunResult> {
                 ],
             };
         }
-    } catch (err: any) {
+    } catch (errRaw: unknown) {
+        const err = errRaw as Error;
         console.error('Error writing code to file:', err);
         return { output: [{ type: 'error', text: String(err.message) }] };
     } finally {

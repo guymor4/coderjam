@@ -142,7 +142,7 @@ export function PadPage() {
 
     // Owner watches for isRunning changes and automatically executes code
     useEffect(() => {
-        if (!isOwner || !currentRunner || !pad || !pad.isRunning) {
+        if (!isOwner || !currentRunner || !pad?.isRunning) {
             return;
         }
 
