@@ -187,11 +187,12 @@ describe('useCollaboration', () => {
             });
 
             await act(async () => {
-                await result.current.joinPad('test-pad', 'test-user');
+                await result.current.joinPad('test-pad', 'test-user', 'test-key');
             });
             expect(mockSocket.emit).toHaveBeenCalledWith('join_pad', {
                 padId: 'test-pad',
                 userName: 'test-user',
+                key: 'test-key',
             });
             expect(result.current.error).toBe(null);
         });
@@ -200,7 +201,7 @@ describe('useCollaboration', () => {
             const { result } = renderHook(() => useCollaboration());
 
             await act(async () => {
-                await result.current.joinPad('test-pad', 'test-user');
+                await result.current.joinPad('test-pad', 'test-user', 'test-key');
             });
 
             expect(mockSocket.emit).not.toHaveBeenCalled();
@@ -226,7 +227,7 @@ describe('useCollaboration', () => {
             });
 
             await act(async () => {
-                await result.current.joinPad('test-pad', 'test-user');
+                await result.current.joinPad('test-pad', 'test-user', 'test-key');
             });
 
             expect(result.current.error).toBe('Emit failed');
