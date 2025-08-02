@@ -21,6 +21,7 @@ export const Select: React.FC<SelectProps> = ({
     options,
     placeholder = 'Select...',
     className = '',
+    ...otherProps
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const selectRef = useRef<HTMLDivElement>(null);
@@ -45,7 +46,7 @@ export const Select: React.FC<SelectProps> = ({
     };
 
     return (
-        <div ref={selectRef} className={`relative inline-block ${className}`}>
+        <div ref={selectRef} className={`relative inline-block ${className}`} {...otherProps}>
             <Button
                 variant="outline"
                 onClick={() => setIsOpen(!isOpen)}
