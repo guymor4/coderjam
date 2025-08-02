@@ -8,4 +8,4 @@ const pool = new Pool({
     database: process.env.DB_NAME || 'coderjam',
 });
 
-export const query = pool.query;
+export default pool;

@@ -2,8 +2,7 @@ import { Editor, type Monaco } from '@monaco-editor/react';
 import { useCallback, useEffect, useState } from 'react';
 import type { editor } from 'monaco-editor';
 import { KeyCode, KeyMod } from 'monaco-editor';
-import type { Language } from '../types/common';
-import type { User } from 'coderjam-shared';
+import type { Language, User } from 'coderjam-shared';
 import { getUserColorClassname } from '../utils/userColors';
 
 const CUSTOM_THEME: editor.IStandaloneThemeData = {
