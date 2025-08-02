@@ -6,7 +6,7 @@ import { PadRoom, PadStateUpdate, PadStateUpdated, User, UserRename, UserRenamed
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
 
-export function setupSocketServer(httpServer: HTTPServer) {
+export function setupSocketServer(httpServer: HTTPServer): void {
     const io = new SocketIOServer(httpServer, {
         cors: {
             origin: process.env.NODE_ENV !== 'production' ? true : ['https://yourdomain.com'],
@@ -103,7 +103,7 @@ export function setupSocketServer(httpServer: HTTPServer) {
                 }
 
                 try {
-                    let newUsers: User[] = [ ...room.users ];
+                    const newUsers: User[] = [ ...room.users ];
                     // Update user cursor position
                     if (cursor) {
                         newUsers[userIndex]!.cursor = cursor;
@@ -205,6 +205,4 @@ export function setupSocketServer(httpServer: HTTPServer) {
             }
         });
     });
-
-    return io;
 }
