@@ -11,6 +11,13 @@ help:
 	@echo "  test        - Run tests for all packages"
 	@echo "  lint        - Run linter for all packages"
 	@echo "  type-check  - Run type checking for all packages"
+	@echo ""
+	@echo "Docker commands:"
+	@echo "  docker-dev       - Start PostgreSQL for development"
+	@echo "  docker-stop      - Stop all Docker containers"
+	@echo "  docker-prod      - Start production containers"
+	@echo "  docker-prod-stop - Stop production containers"
+	@echo "  docker-prod-push - Build and push production images"
 
 # Install dependencies for all packages
 install:

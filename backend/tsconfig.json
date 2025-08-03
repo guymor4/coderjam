@@ -20,12 +20,8 @@
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
-        "composite": true
+        "exactOptionalPropertyTypes": true
     },
-    "references": [
-        { "path": "../shared" }
-    ],
     "include": ["src/**/*"],
-    "exclude": ["node_modules", "dist", "**/*.test.ts", "../frontend", "../shared/src"]
+    "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
