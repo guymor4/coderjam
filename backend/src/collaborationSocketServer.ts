@@ -1,6 +1,6 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
-import { getPad, updatePad, verifyPadKey } from './padService';
+import { getPad, updatePad, verifyPadKey } from './padService.js';
 import {
     BAD_KEY_ERROR, PAD_NOT_FOUND_ERROR,
     PadRoom,

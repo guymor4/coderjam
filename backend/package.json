@@ -1,6 +1,7 @@
 {
     "name": "coderjam-backend",
     "version": "1.0.0",
+    "packageManager": "yarn@4.0.0",
     "description": "Backend server for CoderJam - A web playground that runs code in different languages",
     "main": "dist/server.js",
     "scripts": {
