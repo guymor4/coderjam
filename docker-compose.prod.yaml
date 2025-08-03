@@ -1,10 +1,8 @@
 services:
   postgres:
-#    platform: linux/amd64
+    platform: linux/amd64
     image: postgres:15
     container_name: coderjam-postgres-prod
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: coderjam
       POSTGRES_USER: coderjam
@@ -22,7 +20,7 @@ services:
       - coderjam-network
 
   webapp:
-#    platform: linux/amd64
+    platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile.prod
