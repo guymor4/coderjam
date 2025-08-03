@@ -22,7 +22,7 @@ const authorizedUsers = new Map<string, { padId: string; authorizedAt: Date }>()
 // if user is authorized, they can access the pad without a key for 24 hours
 async function authorizeUserForPad(socketId: string, padId: string, key?: string): Promise<boolean> {
     const authData = authorizedUsers.get(socketId);
-    
+
     // If user is not in authorized list, they must provide a valid key
     if (!authData || authData.padId !== padId) {
         if (!key) {
@@ -37,7 +37,7 @@ async function authorizeUserForPad(socketId: string, padId: string, key?: string
         authorizedUsers.set(socketId, { padId, authorizedAt: new Date() });
         return true;
     }
-    
+
     // Check if authorization is still recent (optional: expire after some time)
     const hoursSinceAuth = (Date.now() - authData.authorizedAt.getTime()) / (1000 * 60 * 60);
     if (hoursSinceAuth > 24) { // Expire after 24 hours
@@ -269,7 +269,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
         socket.on('disconnect', () => {
             // Clean up authorization record
             authorizedUsers.delete(socket.id);
-            
+
             // Remove user from all pad rooms
             for (const [padId, room] of padRoomsById.entries()) {
                 const userIndex = room.users.findIndex(u => u.id === socket.id)
