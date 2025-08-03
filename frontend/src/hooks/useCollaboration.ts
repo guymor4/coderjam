@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { PadStateUpdate, PadStateUpdated, UserRename, UserRenamed } from 'coderjam-shared';
+import {
+    type PadStateUpdate,
+    type PadStateUpdated,
+    type UserRename,
+    type UserRenamed,
+} from 'coderjam-shared';
 
 export interface useCollaborationResult {
     // State
@@ -9,7 +14,7 @@ export interface useCollaborationResult {
     userId?: string;
 
     // Actions
-    joinPad: (padId: string, userName: string) => Promise<void>;
+    joinPad: (padId: string, userName: string, key: string) => Promise<void>;
     leavePad: () => void;
     sendPadStateUpdate: (data: PadStateUpdate) => void;
     sendRenameUpdate: (data: UserRename) => void;
@@ -86,7 +91,7 @@ export function useCollaboration(callbacks?: useCollaborationCallbacks): useColl
     const userId = socketRef.current?.id;
 
     const joinPad = useCallback(
-        async (padId: string, userName: string) => {
+        async (padId: string, userName: string, key: string) => {
             const socket = socketRef.current;
 
             if (!socket || !isConnected) {
@@ -97,7 +102,7 @@ export function useCollaboration(callbacks?: useCollaborationCallbacks): useColl
 
             try {
                 currentPadIdRef.current = padId;
-                socket.emit('join_pad', { padId, userName });
+                socket.emit('join_pad', { padId, userName, key });
                 setError(null);
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Failed to join pad';

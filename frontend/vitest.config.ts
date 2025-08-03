@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
     plugins: [react()],
@@ -11,7 +12,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            'coderjam-shared': '../shared/src',
+            'coderjam-shared': path.resolve(__dirname, '../shared/dist/index.js'),
         },
     },
 });

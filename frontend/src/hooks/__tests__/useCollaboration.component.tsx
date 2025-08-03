@@ -43,7 +43,7 @@ function TestCollaborationComponent() {
             return;
         }
 
-        joinPad(padState.padId, userName);
+        joinPad(padState.padId, userName, 'test-key');
         return () => leavePad();
 
         // `username` should not be a dependency here
@@ -137,7 +137,7 @@ describe('useCollaboration in a Component', () => {
             padId: 'test-pad-id',
             users: [],
             code: '',
-            language: '',
+            language: 'javascript',
             output: [],
             isRunning: false,
         });
@@ -257,7 +257,7 @@ describe('useCollaboration in a Component', () => {
             padId: 'test-pad',
             users: [],
             code: '',
-            language: '',
+            language: 'javascript',
             output: [],
             isRunning: false,
         });
