@@ -1,11 +1,10 @@
 {
     "name": "coderjam-backend",
     "version": "1.0.0",
-    "packageManager": "yarn@4.0.0",
     "description": "Backend server for CoderJam - A web playground that runs code in different languages",
     "main": "dist/server.js",
     "scripts": {
-        "dev": "cd ../shared && yarn build && cd ../backend && tsx watch src/server.ts",
+        "dev": "tsx watch src/server.ts",
         "build": "tsc",
         "start": "node dist/server.js",
         "lint": "eslint src --ext .ts --fix",
@@ -13,7 +12,7 @@
         "clean": "rm -rf dist"
     },
     "dependencies": {
-        "coderjam-shared": "link:../shared",
+        "coderjam-shared": "workspace:*",
         "cors": "^2.8.5",
         "express": "^4.21.2",
         "helmet": "^8.0.0",
@@ -29,8 +28,8 @@
         "@types/node": "^22.0.0",
         "@types/pg": "^8.11.10",
         "@types/socket.io": "^3.0.2",
-        "@typescript-eslint/eslint-plugin": "^8.38.0",
-        "@typescript-eslint/parser": "^8.38.0",
+        "@typescript-eslint/eslint-plugin": "^8.36.0",
+        "@typescript-eslint/parser": "^8.36.0",
         "eslint": "^9.30.1",
         "eslint-config-prettier": "^10.1.5",
         "eslint-plugin-import": "^2.32.0",

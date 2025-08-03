@@ -35,7 +35,7 @@ export function isValidLanguage(lang: string): lang is Language {
     return SUPPORTED_LANGUAGES.includes(lang as Language);
 }
 
-export function getLanguageCodeSample(lang: Language): string {
+export function getLanguageCodeSample(lang: Language) {
     if (!isValidLanguage(lang)) {
         throw new Error(`Unsupported language: ${lang}`);
     }

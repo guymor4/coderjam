@@ -1,4 +1,4 @@
 // Re-export all
-export * from './types.js';
-export * from './languages.js';
-export * from './errors.js';
+export * from './types';
+export * from './languages';
+export * from './errors';

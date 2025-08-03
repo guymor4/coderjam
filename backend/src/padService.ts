@@ -1,6 +1,6 @@
 import { getLanguageCodeSample, Language, OutputEntry } from 'coderjam-shared';
-import db from './database.js';
-import { PadDB, PadStored } from './types.js';
+import db from './database';
+import { PadDB, PadStored } from './types';
 import {QueryResult} from "pg";
 
 const DEFAULT_LANGUAGE: Language= 'javascript';
