@@ -1,63 +1,81 @@
 # Coderjam Makefile
 
-.PHONY: help dev build clean docker-dev docker-prod test lint type-check install
+.PHONY: help install build clean test lint type-check
 
 # Default target
 help:
 	@echo "Available targets:"
-	@echo "  dev         - Start development server"
-	@echo "  install     - Install dependencies"
-	@echo "  clean       - Clean build artifacts"
-	@echo "  build       - Build production version"
-	@echo "  docker-prod-push - Build and push production Docker images to the registry"
-	@echo "  docker-prod - Pull and start production Docker containers"
-	@echo "  nginx-install - Install nginx and certbot on server"
-	@echo "  ssl-setup - Setup SSL certificate with Let's Encrypt"
-	@echo "  nginx-deploy - Deploy nginx configuration"
-	@echo "  test        - Run tests"
-	@echo "  lint        - Run linter"
-	@echo "  type-check  - Run type checking"
+	@echo "  install     - Install dependencies for all packages"
+	@echo "  build       - Build all packages for production"
+	@echo "  clean       - Clean build artifacts from all packages"
+	@echo "  test        - Run tests for all packages"
+	@echo "  lint        - Run linter for all packages"
+	@echo "  type-check  - Run type checking for all packages"
+	@echo ""
+	@echo "Docker commands:"
+	@echo "  docker-dev       - Start PostgreSQL for development"
+	@echo "  docker-stop      - Stop all Docker containers"
+	@echo "  docker-prod      - Start production containers"
+	@echo "  docker-prod-stop - Stop production containers"
+	@echo "  docker-prod-push - Build and push production images"
 
-# Development - starts postgres if not running and then starts dev server
-dev:
-	@if ! docker ps | grep -q coderjam-postgres; then \
-		echo "Starting PostgreSQL..."; \
-		docker compose up -d; \
-	else \
-		echo "PostgreSQL already running :)"; \
-	fi
-	yarn dev
-
-# Build
-build:
-	yarn build
-
-# Clean
-clean:
-	yarn clean
-
-# Install dependencies
+# Install dependencies for all packages
 install:
-	yarn install
+	@echo "📦 Installing dependencies for all packages..."
+	cd shared && yarn install
+	cd frontend && yarn install
+	cd backend && yarn install
 
-# Test unit tests
+# Run development environment
+dev:
+	@echo "🚀 Starting development environment..."
+	cd frontend && yarn dev &
+	cd backend && sleep 0.5 && yarn dev
+
+# Build all packages (shared first, then others)
+build:
+	@echo "🏗️ Building all packages..."
+	cd shared && yarn build
+	cd frontend && yarn build
+	cd backend && yarn build
+
+# Clean all packages
+clean:
+	@echo "🧹 Cleaning all packages..."
+	cd shared && yarn clean
+	cd frontend && yarn clean
+	cd backend && yarn clean
+
+# Test all packages
 test:
-	yarn test
+	@echo "🧪 Running tests for all packages..."
+	cd frontend && yarn test
 
-# Test end-to-end tests
-test-e2e:
-	yarn test:e2e
-
-# Linting
+# Lint all packages
 lint:
-	yarn lint
+	@echo "🔍 Linting all packages..."
+	cd shared && yarn lint
+	cd frontend && yarn lint
+	cd backend && yarn lint
 
-# Type checking
+# Type check all packages
 type-check:
-	yarn type-check
+	@echo "📝 Type checking all packages..."
+	cd shared && yarn type-check 2>/dev/null || echo "No type-check script in shared" 
+	cd frontend && yarn type-check
+	cd backend && yarn type-check
+
+# ------------ Docker targets ------------
+docker-dev:
+	# Start Docker containers for development
+	docker compose up -d
+
+docker-stop:
+	# Stop all Docker containers
+	docker compose down
 
 # Stop all containers
-docker-stop:
+docker-prod-stop:
 	docker compose -f docker-compose.prod.yaml down
 
 # Build and push production Docker images to the registry

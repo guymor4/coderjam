@@ -25,27 +25,22 @@ git clone <your-repo-url>
 cd coderjam
 ```
 
-2. Start the PostgreSQL database:
+2. Install all dependencies:
 ```bash
-docker-compose up -d
-```
-
-3. Install all dependencies:
-```bash
-yarn install
+make install
 ```
 
 ### Development
 To run both frontend and backend in development mode:
 
-1. Make sure PostgreSQL is running:
+1. Start the PostgreSQL database:
 ```bash
 docker-compose up -d
 ```
 
 2. Start the development servers:
 ```bash
-yarn dev
+make dev
 ```
 
 This will start:

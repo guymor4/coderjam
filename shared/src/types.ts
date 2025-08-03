@@ -44,7 +44,7 @@ export interface PadStateUpdate {
     output?: OutputEntry[];
 }
 
-export interface PadStateUpdated extends PadRoom {}
+export type PadStateUpdated = PadRoom;
 
 export interface UserRename {
     padId: string;
@@ -57,6 +57,6 @@ export interface UserRenamed {
     newName: string;
 }
 
-export function capitalize(str: string) {
+export function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
