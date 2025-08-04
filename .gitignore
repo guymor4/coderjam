@@ -574,4 +574,4 @@ frontend/public/pyodide/*.tar
 .claude
 playwright-report
 frontend/test-results
-.yarn/install-state.gz
+*/.yarn/install-state.gz
