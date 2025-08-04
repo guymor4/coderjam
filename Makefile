@@ -23,7 +23,7 @@ help:
 # Install dependencies for all packages
 install:
 	@echo "📦 Installing dependencies for all packages..."
-	cd shared && yarn install
+	cd shared && yarn install && yarn build # also build to avoid type errors in IDEs
 	cd frontend && yarn install
 	cd backend && yarn install
 
