@@ -15,7 +15,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "lint": "eslint src --ext .ts --fix"
+    "lint": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.38.0",
