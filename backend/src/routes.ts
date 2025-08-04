@@ -1,7 +1,11 @@
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { createPad } from './padService';
+import { createPad } from './padService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function setupRoutes(app: express.Application): void {
     const VITE_DEV_SERVER = process.env.VITE_DEV_SERVER || 'http://localhost:5173';

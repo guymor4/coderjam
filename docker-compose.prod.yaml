@@ -1,8 +1,10 @@
 services:
   postgres:
-    platform: linux/amd64
+    platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
     image: postgres:15
     container_name: coderjam-postgres-prod
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: coderjam
       POSTGRES_USER: coderjam
@@ -20,7 +22,7 @@ services:
       - coderjam-network
 
   webapp:
-    platform: linux/amd64
+    platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
     build:
       context: .
       dockerfile: Dockerfile.prod

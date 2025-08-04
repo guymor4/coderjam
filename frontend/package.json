@@ -3,6 +3,7 @@
     "private": true,
     "version": "0.0.0",
     "type": "module",
+    "packageManager": "yarn@4.0.0",
     "scripts": {
         "dev": "vite",
         "build": "tsc -b && vite build",
@@ -20,7 +21,7 @@
     },
     "dependencies": {
         "@monaco-editor/react": "^4.7.0",
-        "coderjam-shared": "workspace:*",
+        "coderjam-shared": "link:../shared",
         "monaco-editor": "^0.48.0",
         "quickjs-emscripten": "^0.31.0",
         "react": "^19.1.0",

@@ -2,8 +2,8 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { createServer as createHttpServer } from 'http';
-import { setupRoutes } from './routes';
-import { setupSocketServer } from './collaborationSocketServer';
+import { setupRoutes } from './routes.js';
+import { setupSocketServer } from './collaborationSocketServer.js';
 
 export function createServer(): Express {
     const app = express();

@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "module": "commonjs",
+        "module": "ES2022",
+        "moduleResolution": "node",
         "lib": ["ES2022"],
         "outDir": "./dist",
         "rootDir": "./src",
@@ -20,12 +21,8 @@
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
-        "composite": true
+        "exactOptionalPropertyTypes": true
     },
-    "references": [
-        { "path": "../shared" }
-    ],
     "include": ["src/**/*"],
-    "exclude": ["node_modules", "dist", "**/*.test.ts", "../frontend", "../shared/src"]
+    "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

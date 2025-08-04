@@ -573,6 +573,5 @@ frontend/public/pyodide/*.whl*
 frontend/public/pyodide/*.tar
 .claude
 playwright-report
-.yarn/install-state.gz
 frontend/test-results
-
+*/.yarn/install-state.gz
