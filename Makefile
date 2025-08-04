@@ -1,11 +1,12 @@
 # Coderjam Makefile
 
-.PHONY: help install build clean test lint type-check
+.PHONY: help install dev build clean test lint type-check
 
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  install     - Install dependencies for all packages"
+	@echo "  dev         - Start development environment (frontend + backend)"
 	@echo "  build       - Build all packages for production"
 	@echo "  clean       - Clean build artifacts from all packages"
 	@echo "  test        - Run tests for all packages"
