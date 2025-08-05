@@ -93,7 +93,7 @@ async function getGo(): Promise<Go> {
     // It will be loaded to the global `window` object
     cmd = await WebAssembly.instantiateStreaming(fetch(GO_WASM_URL), goJsWrapper.importObject);
     goJsWrapper.env = {
-        // GOMODCACHE: '/home/me/.cache/go-mod',
+        GOMODCACHE: '/.cache/go-mod',
         GOPROXY: 'https://proxy.golang.org/',
         GOROOT: '/usr/local/go',
         HOME: '/home/me',
@@ -114,12 +114,12 @@ async function getGo(): Promise<Go> {
     singletonGo.fs.mkdirSync('/bin', { mode: 0o700 });
     await singletonGo.hackpad.overlayIndexedDB('/bin', { cache: true });
     await singletonGo.hackpad.overlayIndexedDB('/home/me');
-    // console.log('Creating /home/me/.cache directory...');
-    // await singletonGo.fs.mkdirSync('/home/me/.cache', { recursive: true, mode: 0o700 });
-    // await singletonGo.hackpad.overlayIndexedDB('/home/me/.cache', { cache: true });
+    console.log('Creating /.cache directory...');
+    singletonGo.fs.mkdirSync('/.cache', { recursive: true, mode: 0o700 });
+    await singletonGo.hackpad.overlayIndexedDB('/.cache', { cache: true });
 
     console.log('Creating /usr/local/go directory...');
-    await singletonGo.fs.mkdirSync('/usr/local/go', {
+    singletonGo.fs.mkdirSync('/usr/local/go', {
         recursive: true,
         mode: 0o700,
     });
