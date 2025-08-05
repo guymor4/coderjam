@@ -1279,6 +1279,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@umami/node@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "@umami/node@npm:0.4.0"
+  checksum: 4410a42deb7d27b23b2a3995013143b71b3e10460a920df0f181398eb6e071b3741c99579164e33e80c2be291dc91d34f77fb076e2cbbf1351c34543d7245a7f
+  languageName: node
+  linkType: hard
+
 "@vitejs/plugin-react@npm:^4.6.0":
   version: 4.7.0
   resolution: "@vitejs/plugin-react@npm:4.7.0"
@@ -1899,6 +1906,7 @@ __metadata:
     "@types/react-dom": "npm:^19.1.6"
     "@typescript-eslint/eslint-plugin": "npm:^8.38.0"
     "@typescript-eslint/parser": "npm:^8.38.0"
+    "@umami/node": "npm:^0.4.0"
     "@vitejs/plugin-react": "npm:^4.6.0"
     "@vitest/ui": "npm:^3.2.4"
     autoprefixer: "npm:^10.4.21"
