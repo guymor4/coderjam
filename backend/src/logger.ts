@@ -26,7 +26,6 @@ const productionFormat = winston.format.combine(
 
 const SentryWinstonTransport = Sentry.createSentryWinstonTransport(Transport);
 
-
 // Create logger instance
 export const logger = winston.createLogger({
     level: isDevelopment ? 'debug' : 'info',
@@ -34,37 +33,41 @@ export const logger = winston.createLogger({
     defaultMeta: {
         service: 'coderjam-backend',
         version: process.env.APP_VERSION || 'unknown',
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
     },
     transports: [
         new winston.transports.Console({
             handleExceptions: true,
-            handleRejections: true
+            handleRejections: true,
         }),
         new SentryWinstonTransport(),
     ],
     // Exit on handled exceptions in production
-    exitOnError: !isDevelopment
+    exitOnError: !isDevelopment,
 });
 
 // Add file transports in production
 if (!isDevelopment) {
-    logger.add(new winston.transports.File({
-        filename: 'logs/error.log',
-        level: 'error',
-        handleExceptions: true,
-        handleRejections: true,
-        maxsize: 15728640, // 15MB
-        maxFiles: 5
-    }));
-    logger.add(new winston.transports.File({
-        filename: 'logs/combined.log',
-        level: 'debug',
-        handleExceptions: true,
-        handleRejections: true,
-        maxsize: 15728640, // 15MB
-        maxFiles: 5
-    }));
+    logger.add(
+        new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+            handleExceptions: true,
+            handleRejections: true,
+            maxsize: 15728640, // 15MB
+            maxFiles: 5,
+        })
+    );
+    logger.add(
+        new winston.transports.File({
+            filename: 'logs/combined.log',
+            level: 'debug',
+            handleExceptions: true,
+            handleRejections: true,
+            maxsize: 15728640, // 15MB
+            maxFiles: 5,
+        })
+    );
 }
 
 export const collabLogger = logger.child({ component: 'collaboration' });
@@ -73,14 +76,14 @@ export const collabLogger = logger.child({ component: 'collaboration' });
 export const morganStream = {
     write: (message: string): void => {
         logger.info(message.trim(), { component: 'http' });
-    }
+    },
 };
 
-export const logServerError = (error: Error, context: any = {}) => {
+export const logServerError = (error: Error, context: object = {}): void => {
     logger.error('Server Error', {
         message: error.message,
         stack: error.stack,
         ...context,
-        component: 'error'
+        component: 'error',
     });
 };

@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createPad } from './padService.js';
 import { logger, logServerError } from './logger.js';
-import { capturePadEvent } from './sentry.js';
 import { isDevelopment, NODE_ENV, VITE_DEV_SERVER } from './common.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,14 +31,14 @@ export function setupRoutes(app: express.Application): void {
                 timestamp: new Date().toISOString(),
                 checks: {
                     server: 'ok',
-                }
+                },
             });
         } catch (error) {
             logger.error('Readiness check failed:', error);
             res.status(503).json({
                 status: 'not ready',
                 timestamp: new Date().toISOString(),
-                error: error instanceof Error ? error.message : 'Unknown error'
+                error: error instanceof Error ? error.message : 'Unknown error',
             });
         }
     });
@@ -54,15 +53,9 @@ export function setupRoutes(app: express.Application): void {
                 padId: id,
                 ip: req.ip,
                 userAgent: req.get('User-Agent'),
-                component: 'pad-service'
+                component: 'pad-service',
             });
-            
-            // Track pad creation in Sentry
-            capturePadEvent('created', id, {
-                ip: req.ip,
-                userAgent: req.get('User-Agent')
-            });
-            
+
             res.json({
                 id,
                 key,
@@ -71,7 +64,7 @@ export function setupRoutes(app: express.Application): void {
             logServerError(error instanceof Error ? error : new Error(String(error)), {
                 event: 'create-pad',
                 ip: req.ip,
-                component: 'pad-service'
+                component: 'pad-service',
             });
             res.status(500).json({ error: 'Failed to create pad' });
         }

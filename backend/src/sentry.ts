@@ -4,14 +4,14 @@ import { isDevelopment, SENTRY_DSN } from './common.js';
 
 // Initialize Sentry only if DSN is provided and not in development
 export function initSentry(): void {
-    if (!SENTRY_DSN) {
-        logger.error("SENTRY_DSN env variable is not set. Sentry will not be initialized.");
+    if (isDevelopment) {
+        logger.info('Sentry is disabled in development mode.');
         return;
     }
-
-    // if (!SENTRY_DSN || isDevelopment) {
-    //     return;
-    // }
+    if (!SENTRY_DSN) {
+        logger.error('SENTRY_DSN env variable is not set. Sentry will not be initialized.');
+        return;
+    }
 
     Sentry.init({
         dsn: SENTRY_DSN,
@@ -26,16 +26,19 @@ export function initSentry(): void {
             }
             return log;
         },
-        
+
         // Filter out health check requests from error reporting
         beforeSend(event) {
             // Don't report health check errors
-            if (event.request?.url?.includes('/api/health') || event.request?.url?.includes('/api/ready')) {
+            if (
+                event.request?.url?.includes('/api/health') ||
+                event.request?.url?.includes('/api/ready')
+            ) {
                 return null;
             }
             return event;
         },
-        
+
         // Set custom tags
         initialScope: {
             tags: {
@@ -45,46 +48,6 @@ export function initSentry(): void {
         },
     });
 }
-
-// Helper function to capture custom events
-export const captureCodeExecution = (language: string, success: boolean, duration?: number, error?: string) => {
-    Sentry.addBreadcrumb({
-        category: 'code-execution',
-        message: `Code execution: ${language}`,
-        level: success ? 'info' : 'error',
-        data: {
-            language,
-            success,
-            duration,
-            error,
-        },
-    });
-    
-    if (!success && error) {
-        Sentry.captureMessage(`Code execution failed for ${language}: ${error}`, 'error');
-    }
-};
-
-export const captureCollaborationEvent = (event: string, data: any = {}) => {
-    Sentry.addBreadcrumb({
-        category: 'collaboration',
-        message: `Collaboration: ${event}`,
-        level: 'info',
-        data,
-    });
-};
-
-export const capturePadEvent = (event: string, padId: string, data: any = {}) => {
-    Sentry.addBreadcrumb({
-        category: 'pad',
-        message: `Pad ${event}: ${padId}`,
-        level: 'info',
-        data: {
-            padId,
-            ...data,
-        },
-    });
-};
 
 // Export Sentry for direct use
 export { Sentry };

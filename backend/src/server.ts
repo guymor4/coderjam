@@ -94,9 +94,6 @@ export function main(): void {
             version: process.env.APP_VERSION || 'unknown',
             component: 'startup',
         });
-
-        const isDevelopment = process.env.NODE_ENV !== 'production';
-        const VITE_DEV_SERVER = process.env.VITE_DEV_SERVER || 'http://localhost:5173';
     });
 }
 
