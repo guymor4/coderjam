@@ -10,7 +10,7 @@ import {
     UserRename,
     UserRenamed,
 } from 'coderjam-shared';
-import { collabLogger } from './logger';
+import { collabLogger } from './logger.js';
 
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();

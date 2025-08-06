@@ -21,13 +21,13 @@ services:
     networks:
       - coderjam-network
 
-  webapp:
+  webapp-1:
     platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
     build:
       context: .
       dockerfile: Dockerfile.prod
-    image: sharkdx/coderjam-webapp
-    container_name: coderjam-webapp-prod
+    image: sharkdx/coderjam-webapp:${APP_VERSION:-latest}
+    container_name: coderjam-webapp-1
     ports:
       - "8080:8080"
     environment:
@@ -38,9 +38,78 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD:-coderjam123}
       - DB_NAME=coderjam
       - PORT=8080
+      - APP_VERSION=${APP_VERSION:-latest}
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - coderjam-network
+
+  webapp-2:
+    platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: sharkdx/coderjam-webapp:${APP_VERSION:-latest}
+    container_name: coderjam-webapp-2
+    ports:
+      - "8081:8080"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=coderjam
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-coderjam123}
+      - DB_NAME=coderjam
+      - PORT=8080
+      - APP_VERSION=${APP_VERSION:-latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - coderjam-network
+
+  webapp-3:
+    platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: sharkdx/coderjam-webapp:${APP_VERSION:-latest}
+    container_name: coderjam-webapp-3
+    ports:
+      - "8082:8080"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=coderjam
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-coderjam123}
+      - DB_NAME=coderjam
+      - PORT=8080
+      - APP_VERSION=${APP_VERSION:-latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
     networks:
       - coderjam-network

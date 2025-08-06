@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { isDevelopment } from './common';
+import { isDevelopment } from './common.js';
 import * as Sentry from '@sentry/node';
 import Transport from 'winston-transport';
 

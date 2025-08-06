@@ -1,15 +1,8 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { HomePage } from './components/HomePage';
 import { PadPage } from './PadPage';
-import { useEffect } from 'react';
-import { analytics } from './utils/analytics';
 
 function App() {
-    useEffect(() => {
-        // Initialize analytics on app load
-        analytics.trackPageView();
-    }, []);
-
     return (
         <Router>
             <Routes>

@@ -79,11 +79,17 @@ docker-stop:
 docker-prod-stop:
 	docker compose -f docker-compose.prod.yaml down
 
-# Build and push production Docker images to the registry
+# Build and push production Docker images to the registry (sharkdx/coderjam-webapp)
+# Usage: make docker-prod-push [APP_VERSION=v1.2.3]
 # HANDLE WITH CAUTION
 docker-prod-push:
-	docker compose -f docker-compose.prod.yaml build
-	docker compose -f docker-compose.prod.yaml push
+	@echo "🏗️ Building and pushing Docker images for amd64..."
+	$(eval APP_VERSION ?= $(shell date +%Y-%m-%d))
+	@echo "📦 Building image: sharkdx/coderjam-webapp:$(APP_VERSION)"
+	APP_VERSION=$(APP_VERSION) docker compose -f docker-compose.prod.yaml build \
+		--build-arg BUILDKIT_INLINE_CACHE=1
+	APP_VERSION=$(APP_VERSION) docker compose -f docker-compose.prod.yaml push
+	@echo "✅ Successfully pushed sharkdx/coderjam-webapp:$(APP_VERSION)"
 
 # Pull and start production Docker containers
 # HANDLE WITH CAUTION

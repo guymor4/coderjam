@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/node';
-import { logger } from './logger';
-import { isDevelopment, SENTRY_DSN } from './common';
+import { logger } from './logger.js';
+import { isDevelopment, SENTRY_DSN } from './common.js';
 
 // Initialize Sentry only if DSN is provided and not in development
 export function initSentry(): void {

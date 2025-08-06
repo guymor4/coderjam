@@ -5,7 +5,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createPad } from './padService.js';
 import { logger, logServerError } from './logger.js';
 import { capturePadEvent } from './sentry.js';
-import { isDevelopment, NODE_ENV, VITE_DEV_SERVER } from './common';
+import { isDevelopment, NODE_ENV, VITE_DEV_SERVER } from './common.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

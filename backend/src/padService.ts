@@ -2,7 +2,7 @@ import { getLanguageCodeSample, Language, OutputEntry } from 'coderjam-shared';
 import db from './database.js';
 import { PadDB, PadStored } from './types.js';
 import {QueryResult} from "pg";
-import { logServerError } from './logger';
+import { logServerError } from './logger.js';
 
 const DEFAULT_LANGUAGE: Language= 'javascript';
 
