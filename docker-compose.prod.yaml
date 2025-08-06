@@ -28,7 +28,6 @@ services:
     ports:
       - "6060:3000"
     environment:
-      DATABASE_URL: postgresql://umami:umami@umami-postgresql:5432/umami
       DATABASE_TYPE: postgresql
     restart: unless-stopped
     env_file:
@@ -36,6 +35,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - coderjam-network
 
   webapp-1:
     platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
