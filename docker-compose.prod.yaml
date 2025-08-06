@@ -21,6 +21,22 @@ services:
     networks:
       - coderjam-network
 
+  umami:
+    platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: umami
+    ports:
+      - "6060:3000"
+    environment:
+      DATABASE_URL: postgresql://umami:umami@umami-postgresql:5432/umami
+      DATABASE_TYPE: postgresql
+    restart: unless-stopped
+    env_file:
+      - ./.env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   webapp-1:
     platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
     build:
