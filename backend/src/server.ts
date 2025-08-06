@@ -8,10 +8,10 @@ import { createServer as createHttpServer } from 'http';
 import { setupRoutes } from './routes.js';
 import { setupSocketServer } from './collaborationSocketServer.js';
 import { logServerError, logger, morganStream } from './logger.js';
+import { isDevelopment } from './common';
 
 export function createServer(): Express {
     const app = express();
-    const isDevelopment = process.env.NODE_ENV !== 'production';
 
     // Initialize Sentry
     logger.info('Initializing Sentry');
