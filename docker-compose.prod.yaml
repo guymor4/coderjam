@@ -39,6 +39,7 @@ services:
       - DB_NAME=coderjam
       - PORT=8080
       - APP_VERSION=${APP_VERSION:-latest}
+      - SENTRY_DSN=${SENTRY_DSN}
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,6 +71,7 @@ services:
       - DB_NAME=coderjam
       - PORT=8080
       - APP_VERSION=${APP_VERSION:-latest}
+      - SENTRY_DSN=${SENTRY_DSN}
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,6 +103,7 @@ services:
       - DB_NAME=coderjam
       - PORT=8080
       - APP_VERSION=${APP_VERSION:-latest}
+      - SENTRY_DSN=${SENTRY_DSN}
     depends_on:
       postgres:
         condition: service_healthy
