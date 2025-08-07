@@ -8,7 +8,7 @@ import { createServer as createHttpServer } from 'http';
 import { setupRoutes } from './routes.js';
 import { setupSocketServer } from './collaborationSocketServer.js';
 import { logServerError, logger, morganStream } from './logger.js';
-import { isDevelopment } from './common';
+import { isDevelopment } from './common.js';
 
 export function createServer(): Express {
     const app = express();

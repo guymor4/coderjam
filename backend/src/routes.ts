@@ -25,7 +25,6 @@ export function setupRoutes(app: express.Application): void {
     // Readiness probe - more comprehensive health check
     app.get('/api/ready', async (_req, res) => {
         try {
-            // Add any database connectivity checks here if needed
             res.json({
                 status: 'ready',
                 timestamp: new Date().toISOString(),
@@ -105,8 +104,12 @@ export function setupRoutes(app: express.Application): void {
         const frontendDistPath = path.join(__dirname, '../../public');
         app.use(express.static(frontendDistPath));
 
-        // Handle React Router routes
-        app.get('*', (_req, res) => {
+        // Handle React Router routes (but not files with extensions)
+        app.get('*', (req, res) => {
+            // Don't serve index.html for files with extensions
+            if (path.extname(req.path)) {
+                return res.status(404).send('File not found');
+            }
             res.sendFile(path.join(frontendDistPath, 'index.html'));
         });
     }
