@@ -10,6 +10,7 @@ import {
     UserRename,
     UserRenamed,
 } from 'coderjam-shared';
+import { collabLogger } from './logger.js';
 
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
@@ -33,7 +34,6 @@ async function authorizeUserForPad(socketId: string, padId: string, key?: string
             return false;
         }
 
-        console.log(`User ${socketId} authorized for pad ${padId}`);
         authorizedUsers.set(socketId, { padId, authorizedAt: new Date() });
         return true;
     }
@@ -70,10 +70,15 @@ export function setupSocketServer(httpServer: HTTPServer): void {
     });
 
     io.on('connection', (socket) => {
-        console.log(`User connected: ${socket.id}`);
+        collabLogger.info({
+            event: 'connection',
+            message: 'New socket connection established',
+            socketId: socket.id,
+        });
 
         socket.on('join_pad', async (data: { padId: string; userName: string; key: string }) => {
-            const { padId, userName, key } = data;
+            const { padId, userName: rawUsername, key } = data;
+            const userName = sanitizeUserName(rawUsername);
 
             try {
                 // Validate input
@@ -85,6 +90,14 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                 // Verify user is authorized for this pad
                 const isAuthorized = await authorizeUserForPad(socket.id, padId, key);
                 if (!isAuthorized) {
+                    collabLogger.error({
+                        event: 'join_pad',
+                        message: 'Unauthorized access attempt',
+                        padId,
+                        socketId: socket.id,
+                        userName: userName,
+                        keyProvided: !!key,
+                    })
                     socket.emit('error', BAD_KEY_ERROR);
                     return;
                 }
@@ -92,14 +105,26 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                 // Verify pad exists
                 const pad = await getPad(padId);
                 if (!pad) {
+                    collabLogger.warn({
+                        event: 'join_pad',
+                        message: 'Pad not found',
+                        padId,
+                        socketId: socket.id,
+                        userName: userName,
+                    });
                     socket.emit('error', PAD_NOT_FOUND_ERROR);
                     return;
                 }
 
                 if (socket.rooms.has(padId))
                 {
-                    // User is already in the pad room
-                    console.log(`User ${socket.id} already in pad ${padId}`);
+                    collabLogger.info({
+                        event: 'join_pad',
+                        message: 'User already in pad room',
+                        padId,
+                        socketId: socket.id,
+                        userName: userName,
+                    });
                     return;
                 }
 
@@ -122,7 +147,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
 
                 const user: User = {
                     id: socket.id,
-                    name: sanitizeUserName(userName),
+                    name: userName,
                 };
 
                 // Add user to the room
@@ -147,9 +172,22 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                     users: room.users,
                 } as PadStateUpdated);
 
-                console.log(`User ${socket.id} (${userName}) joined pad ${padId}`);
+                collabLogger.info({
+                    event: 'join_pad',
+                    message: 'User joined pad',
+                    padId,
+                    socketId: socket.id,
+                    userName: userName,
+                })
             } catch (error) {
-                console.error('Error joining pad:', error);
+                collabLogger.error({
+                    event: 'join_pad',
+                    message: 'Error joining pad',
+                    padId,
+                    socketId: socket.id,
+                    userName: userName,
+                    error: error instanceof Error ? error.message : String(error),
+                });
                 socket.emit('error', { message: 'Failed to join pad' });
             }
         });
@@ -166,19 +204,35 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                 // Verify user is still authorized for this pad
                 const isAuthorized = await authorizeUserForPad(socket.id, padId);
                 if (!isAuthorized) {
+                    collabLogger.error({
+                        event: 'pad_state_update',
+                        message: 'Unauthorized access attempt',
+                        padId,
+                        socketId: socket.id,
+                    })
                     socket.emit('error', { message: 'Unauthorized: Invalid access to pad' });
                     return;
                 }
 
                 const room = padRoomsById.get(padId);
                 if (!room) {
-                    console.warn(`Pad room not found for padId: ${padId}`);
+                    collabLogger.warn({
+                        event: 'pad_state_update',
+                        message: 'Pad room not found',
+                        padId,
+                        socketId: socket.id,
+                    });
                     return;
                 }
 
                 const userIndex = room?.users.findIndex(u => u.id === socket.id);
                 if (userIndex === -1) {
-                    console.warn(`User ${socket.id} not found in pad room ${padId}`);
+                    collabLogger.warn({
+                        event: 'pad_state_update',
+                        message: 'User not found in pad room',
+                        padId,
+                        socketId: socket.id,
+                    });
                     return;
                 }
 
@@ -218,7 +272,13 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                         users: newUsers,
                     } as PadStateUpdated);
                 } catch (error) {
-                    console.error('Error handling code change:', error);
+                    collabLogger.error({
+                        event: 'pad_state_update',
+                        message: 'Error updating pad state',
+                        padId,
+                        socketId: socket.id,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
                 }
             }
         );
@@ -235,19 +295,35 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                 // Verify user is still authorized for this pad
                 const isAuthorized = await authorizeUserForPad(socket.id, padId);
                 if (!isAuthorized) {
+                    collabLogger.error({
+                        event: 'user_rename',
+                        message: 'Unauthorized access attempt',
+                        padId,
+                        socketId: socket.id,
+                    })
                     socket.emit('error', { message: 'Unauthorized: Invalid access to pad' });
                     return;
                 }
 
                 const room = padRoomsById.get(padId);
                 if (!room) {
-                    console.warn(`Pad room not found for padId: ${padId}`);
+                    collabLogger.warn({
+                        event: 'user_rename',
+                        message: 'Pad room not found',
+                        padId,
+                        socketId: socket.id,
+                    })
                     return;
                 }
 
                 const user = room?.users.find(u => u.id === socket.id);
                 if (!user) {
-                    console.warn(`User ${socket.id} not found in pad room ${padId}`);
+                    collabLogger.warn({
+                        event: 'user_rename',
+                        message: 'User not found in pad room',
+                        padId,
+                        socketId: socket.id,
+                    });
                     return;
                 }
 
@@ -261,7 +337,14 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                         newName
                     } as UserRenamed);
                 } catch (error) {
-                    console.error('Error handling code change:', error);
+                    collabLogger.error({
+                        event: 'user_rename',
+                        message: 'Error renaming user',
+                        padId,
+                        newName,
+                        socketId: socket.id,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
                 }
             }
         );
@@ -282,7 +365,13 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                     if (room.ownerId === socket.id && room.users.length > 0) {
                         // Assign ownership to the first remaining user
                         room.ownerId = room.users[0]!.id;
-                        console.log(`Ownership of pad ${padId} transferred from ${socket.id} to ${room.ownerId}`);
+                        collabLogger.info({
+                            event: 'disconnect',
+                            message: 'Ownership transferred to another user',
+                            padId,
+                            oldOwnerId: socket.id,
+                            newOwnerId: room.ownerId,
+                        });
                     }
 
                     if (room.users.length === 0) {
@@ -295,8 +384,13 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                         } as PadStateUpdated);
                     }
 
-
-                    console.log(`User '${user.name}' (${socket.id}) left pad ${padId}`);
+                    collabLogger.info({
+                        event: 'disconnect',
+                        message: 'User left pad',
+                        padId,
+                        socketId: socket.id,
+                        userName: user.name,
+                    })
                 }
             }
         });
