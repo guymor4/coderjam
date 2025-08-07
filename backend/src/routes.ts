@@ -100,17 +100,19 @@ export function setupRoutes(app: express.Application): void {
             return viteProxy(req, res, next);
         });
     } else {
-        // Production: Serve static files from React build
-        const frontendDistPath = path.join(__dirname, '../../public');
-        app.use(express.static(frontendDistPath));
+        // Production: Serve static files from public directory
+        const publicPath = path.join(__dirname, '../../public'); // that's the public directory *in the docker* (/app/public)
+        app.use(express.static(publicPath));
 
         // Handle React Router routes (but not files with extensions)
         app.get('*', (req, res) => {
             // Don't serve index.html for files with extensions
             if (path.extname(req.path)) {
-                return res.status(404).send('File not found');
+                res.status(404).send('File not found');
+                return;
             }
-            res.sendFile(path.join(frontendDistPath, 'index.html'));
+
+            res.sendFile(path.join(publicPath, 'index.html'));
         });
     }
 }

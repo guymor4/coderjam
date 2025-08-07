@@ -3,8 +3,6 @@ services:
     platform: linux/amd64 # comment if you want to build for your native os (e.g. arm for you macOS)
     image: postgres:15
     container_name: coderjam-postgres-prod
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: coderjam
       POSTGRES_USER: coderjam
@@ -47,6 +45,8 @@ services:
     container_name: coderjam-webapp-1
     ports:
       - "8080:8080"
+    volumes:
+      - ./frontend/public/pyodide:/app/public/pyodide
     environment:
       - NODE_ENV=production
       - APP_VERSION=${APP_VERSION:-latest}
@@ -75,6 +75,8 @@ services:
     container_name: coderjam-webapp-2
     ports:
       - "8081:8080"
+    volumes:
+      - ./frontend/public/pyodide:/app/public/pyodide
     environment:
       - NODE_ENV=production
       - APP_VERSION=${APP_VERSION:-latest}
@@ -103,6 +105,8 @@ services:
     container_name: coderjam-webapp-3
     ports:
       - "8082:8080"
+    volumes:
+      - ./frontend/public/pyodide:/app/public/pyodide
     environment:
       - NODE_ENV=production
       - APP_VERSION=${APP_VERSION:-latest}
