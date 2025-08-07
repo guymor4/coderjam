@@ -1,4 +1,5 @@
 import type { RunResult, OutputEntry } from 'coderjam-shared';
+import type { Runner } from './runner';
 
 type Go = {
     childProcess: GoChildProcess;
@@ -12,6 +13,8 @@ type GoChildProcess = {
         pid: number,
         callback: (err: Error | null, process?: Process) => void
     ) => Promise<Process>;
+    // Executes a command and returns a promise with the result AND stdout+stderr
+    // NOTE this will block if until the command finishes, even if the environment is not ready
     execCommand: (
         command: string,
         args: string[]
@@ -70,7 +73,7 @@ function isReady(): boolean {
     return singletonGo !== undefined;
 }
 
-async function init(): Promise<RunResult> {
+const init: Runner['init'] = async () => {
     try {
         await getGo();
         return await runGoCommand(['version'], false);
@@ -79,7 +82,7 @@ async function init(): Promise<RunResult> {
         console.error('Error initializing Go environment:', err);
         return { output: [{ type: 'error', text: String(err.message) }] };
     }
-}
+};
 
 async function getGo(): Promise<Go> {
     if (singletonGo) {
@@ -128,6 +131,10 @@ async function getGo(): Promise<Go> {
         persist: true,
         skipCacheDirs: ['/usr/local/go/pkg/mod', '/usr/local/go/pkg/tool/js_wasm'],
     });
+
+    // Run "go version" to actually wait until we can run commands in the Go environment
+    await runGoCommand(['version'], false);
+
     console.log('Done setting up Go environment.');
 
     return singletonGo;
@@ -199,7 +206,7 @@ async function runGoCommand(args: string[], printExitCode: boolean = true): Prom
         }
         return { output: runOutput };
     } catch (err: unknown) {
-        // console.error(`Error running '${filename}' :`, err);
+        console.error(`Error running 'go ${args.join(' ')} :`, err);
         return { output: [{ type: 'error', text: String(err) }] };
     }
 }

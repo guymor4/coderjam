@@ -89,6 +89,8 @@ export function PadPage() {
         return pad.users.filter((user) => user.id !== userId);
     }, [pad, userId]);
 
+    // Replace output in the pad state and send update to the server
+    // TODO This function should not exists, we should never override written output (this restarts the output on every load)
     const changeOutput = useCallback(
         (newOutput: OutputEntry[]) => {
             setPad((prevPad) =>
@@ -123,19 +125,28 @@ export function PadPage() {
         }
 
         const initRunner = async () => {
+            // should be overridden
+            let initOutput: OutputEntry[] = [{ type: 'log', text: 'No output from runner init' }];
             try {
+                console.log('Running running run...');
                 setInitializingRunning(true);
+                changeOutput([
+                    {
+                        type: 'log',
+                        text: `Loading ${pad?.language} environment...`,
+                    },
+                ]);
                 const result = await currentRunner.init();
-                if (result) {
-                    changeOutput(result.output);
-                }
+                initOutput = result.output;
             } finally {
+                changeOutput(initOutput);
                 setInitializingRunning(false);
             }
         };
 
         initRunner();
-    }, [changeOutput, currentRunner, isOwner]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [changeOutput, currentRunner, isOwner]); // no language dependency here only currentRunner and isOwner
 
     // Owner watches for isRunning changes and automatically executes code
     useEffect(() => {

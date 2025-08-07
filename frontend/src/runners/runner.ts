@@ -5,6 +5,8 @@ import PythonRunner from './python-runner';
 import type { RunResult } from 'coderjam-shared';
 
 export type Runner = {
+    // Initializes the runner environment, optionally taking a progress callback
+    // Note that some runners may not support progress callback
     init: () => Promise<RunResult>;
     isReady?: () => boolean;
     runCode: (code: string) => Promise<RunResult>;
