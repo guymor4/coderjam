@@ -1,5 +1,5 @@
-export const SUPPORTED_LANGUAGES: string[] = ['javascript', 'typescript', 'go', 'python'];
-export type Language = 'javascript' | 'typescript' | 'python' | 'go';
+export const SUPPORTED_LANGUAGES: string[] = ['python', 'javascript', 'typescript', 'go'];
+export type Language = 'python' | 'javascript' | 'typescript' | 'go';
 
 const LANGUAGES_CONFIG: Record<Language, { codeSample: string }> = {
     javascript: {
