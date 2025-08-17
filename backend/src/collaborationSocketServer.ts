@@ -2,7 +2,8 @@ import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { getPad, updatePad, verifyPadKey } from './padService.js';
 import {
-    BAD_KEY_ERROR, PAD_NOT_FOUND_ERROR,
+    BAD_KEY_ERROR,
+    PAD_NOT_FOUND_ERROR,
     PadRoom,
     PadStateUpdate,
     PadStateUpdated,
@@ -11,6 +12,7 @@ import {
     UserRenamed,
 } from 'coderjam-shared';
 import { collabLogger } from './logger.js';
+import { validatePadId } from './common';
 
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
@@ -21,7 +23,11 @@ const authorizedUsers = new Map<string, { padId: string; authorizedAt: Date }>()
 // Check if user is authorized for a specific pad
 // if user is not authorized, they must provide a valid key
 // if user is authorized, they can access the pad without a key for 24 hours
-async function authorizeUserForPad(socketId: string, padId: string, key?: string): Promise<boolean> {
+async function authorizeUserForPad(
+    socketId: string,
+    padId: string,
+    key?: string
+): Promise<boolean> {
     const authData = authorizedUsers.get(socketId);
 
     // If user is not in authorized list, they must provide a valid key
@@ -29,7 +35,7 @@ async function authorizeUserForPad(socketId: string, padId: string, key?: string
         if (!key) {
             return false;
         }
-        const authorized = await verifyPadKey(padId, key)
+        const authorized = await verifyPadKey(padId, key);
         if (!authorized) {
             return false;
         }
@@ -40,11 +46,11 @@ async function authorizeUserForPad(socketId: string, padId: string, key?: string
 
     // Check if authorization is still recent (optional: expire after some time)
     const hoursSinceAuth = (Date.now() - authData.authorizedAt.getTime()) / (1000 * 60 * 60);
-    if (hoursSinceAuth > 24) { // Expire after 24 hours
+    if (hoursSinceAuth > 24) {
+        // Expire after 24 hours
         authorizedUsers.delete(socketId);
         return false;
     }
-
 
     // Record authorization
     authorizedUsers.set(socketId, { padId, authorizedAt: new Date() });
@@ -53,11 +59,10 @@ async function authorizeUserForPad(socketId: string, padId: string, key?: string
 
 // Sanitize user input
 function sanitizeUserName(name: string): string {
-    return name.replace(/[<>"'&]/g, '').substring(0, 50).trim();
-}
-
-function validatePadId(padId: string): boolean {
-    return /^[a-zA-Z0-9]{6}$/.test(padId);
+    return name
+        .replace(/[<>"'&]/g, '')
+        .substring(0, 50)
+        .trim();
 }
 
 export function setupSocketServer(httpServer: HTTPServer): void {
@@ -97,7 +102,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                         socketId: socket.id,
                         userName: userName,
                         keyProvided: !!key,
-                    })
+                    });
                     socket.emit('error', BAD_KEY_ERROR);
                     return;
                 }
@@ -116,8 +121,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                     return;
                 }
 
-                if (socket.rooms.has(padId))
-                {
+                if (socket.rooms.has(padId)) {
                     collabLogger.info({
                         event: 'join_pad',
                         message: 'User already in pad room',
@@ -151,16 +155,16 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                 };
 
                 // Add user to the room
-                const existingUser = room.users.find(u => u.id === socket.id);
+                const existingUser = room.users.find((u) => u.id === socket.id);
                 if (existingUser) {
                     // User already exists, update name
                     existingUser.name = userName;
                 } else {
                     // New user, add to room
                     room.users.push(user);
-                    
+
                     // If room has no owner (original owner left), make this user the new owner
-                    if (!room.ownerId || !room.users.find(u => u.id === room.ownerId)) {
+                    if (!room.ownerId || !room.users.find((u) => u.id === room.ownerId)) {
                         room.ownerId = socket.id;
                     }
                 }
@@ -178,7 +182,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                     padId,
                     socketId: socket.id,
                     userName: userName,
-                })
+                });
             } catch (error) {
                 collabLogger.error({
                     event: 'join_pad',
@@ -209,7 +213,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                         message: 'Unauthorized access attempt',
                         padId,
                         socketId: socket.id,
-                    })
+                    });
                     socket.emit('error', { message: 'Unauthorized: Invalid access to pad' });
                     return;
                 }
@@ -225,7 +229,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                     return;
                 }
 
-                const userIndex = room?.users.findIndex(u => u.id === socket.id);
+                const userIndex = room?.users.findIndex((u) => u.id === socket.id);
                 if (userIndex === -1) {
                     collabLogger.warn({
                         event: 'pad_state_update',
@@ -237,7 +241,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                 }
 
                 try {
-                    const newUsers: User[] = [ ...room.users ];
+                    const newUsers: User[] = [...room.users];
                     // Update user cursor position
                     if (cursor) {
                         newUsers[userIndex]!.cursor = cursor;
@@ -283,71 +287,68 @@ export function setupSocketServer(httpServer: HTTPServer): void {
             }
         );
 
-        socket.on(
-            'user_rename',
-            async ({ padId, newName }: UserRename) => {
-                // Validate input
-                if (!validatePadId(padId)) {
-                    socket.emit('error', { message: 'Invalid pad ID format' });
-                    return;
-                }
-
-                // Verify user is still authorized for this pad
-                const isAuthorized = await authorizeUserForPad(socket.id, padId);
-                if (!isAuthorized) {
-                    collabLogger.error({
-                        event: 'user_rename',
-                        message: 'Unauthorized access attempt',
-                        padId,
-                        socketId: socket.id,
-                    })
-                    socket.emit('error', { message: 'Unauthorized: Invalid access to pad' });
-                    return;
-                }
-
-                const room = padRoomsById.get(padId);
-                if (!room) {
-                    collabLogger.warn({
-                        event: 'user_rename',
-                        message: 'Pad room not found',
-                        padId,
-                        socketId: socket.id,
-                    })
-                    return;
-                }
-
-                const user = room?.users.find(u => u.id === socket.id);
-                if (!user) {
-                    collabLogger.warn({
-                        event: 'user_rename',
-                        message: 'User not found in pad room',
-                        padId,
-                        socketId: socket.id,
-                    });
-                    return;
-                }
-
-                try {
-                    user.name = sanitizeUserName(newName);
-
-                    // Broadcast to other users in the room
-                    socket.to(padId).emit('user_renamed', {
-                        padId,
-                        userId: user.id,
-                        newName
-                    } as UserRenamed);
-                } catch (error) {
-                    collabLogger.error({
-                        event: 'user_rename',
-                        message: 'Error renaming user',
-                        padId,
-                        newName,
-                        socketId: socket.id,
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                }
+        socket.on('user_rename', async ({ padId, newName }: UserRename) => {
+            // Validate input
+            if (!validatePadId(padId)) {
+                socket.emit('error', { message: 'Invalid pad ID format' });
+                return;
             }
-        );
+
+            // Verify user is still authorized for this pad
+            const isAuthorized = await authorizeUserForPad(socket.id, padId);
+            if (!isAuthorized) {
+                collabLogger.error({
+                    event: 'user_rename',
+                    message: 'Unauthorized access attempt',
+                    padId,
+                    socketId: socket.id,
+                });
+                socket.emit('error', { message: 'Unauthorized: Invalid access to pad' });
+                return;
+            }
+
+            const room = padRoomsById.get(padId);
+            if (!room) {
+                collabLogger.warn({
+                    event: 'user_rename',
+                    message: 'Pad room not found',
+                    padId,
+                    socketId: socket.id,
+                });
+                return;
+            }
+
+            const user = room?.users.find((u) => u.id === socket.id);
+            if (!user) {
+                collabLogger.warn({
+                    event: 'user_rename',
+                    message: 'User not found in pad room',
+                    padId,
+                    socketId: socket.id,
+                });
+                return;
+            }
+
+            try {
+                user.name = sanitizeUserName(newName);
+
+                // Broadcast to other users in the room
+                socket.to(padId).emit('user_renamed', {
+                    padId,
+                    userId: user.id,
+                    newName,
+                } as UserRenamed);
+            } catch (error) {
+                collabLogger.error({
+                    event: 'user_rename',
+                    message: 'Error renaming user',
+                    padId,
+                    newName,
+                    socketId: socket.id,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        });
 
         socket.on('disconnect', () => {
             // Clean up authorization record
@@ -355,7 +356,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
 
             // Remove user from all pad rooms
             for (const [padId, room] of padRoomsById.entries()) {
-                const userIndex = room.users.findIndex(u => u.id === socket.id)
+                const userIndex = room.users.findIndex((u) => u.id === socket.id);
                 if (userIndex >= 0) {
                     const user = room.users[userIndex]!;
                     // Remove user from the room
@@ -390,7 +391,7 @@ export function setupSocketServer(httpServer: HTTPServer): void {
                         padId,
                         socketId: socket.id,
                         userName: user.name,
-                    })
+                    });
                 }
             }
         });
