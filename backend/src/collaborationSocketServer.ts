@@ -12,7 +12,7 @@ import {
     UserRenamed,
 } from 'coderjam-shared';
 import { collabLogger } from './logger.js';
-import { validatePadId } from './common';
+import { validatePadId } from './common.js';
 
 // Pad rooms map: padId -> PadRoom
 const padRoomsById = new Map<string, PadRoom>();
