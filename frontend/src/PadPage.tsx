@@ -359,7 +359,7 @@ export function PadPage() {
                                 onChange={changeLanguage}
                                 className="capitalize"
                                 data-testid="language-selector"
-                                disabled={initializingRunning || pad.isRunning}
+                                disabled={initializingRunning || pad.isRunning || !isConnected}
                                 options={SUPPORTED_LANGUAGES.map((lang) => ({
                                     value: lang,
                                     label: capitalize(lang),
@@ -397,7 +397,11 @@ export function PadPage() {
                                 Running...
                             </Button>
                         ) : (
-                            <Button colorType="green" onClick={signalRunCode}>
+                            <Button
+                                colorType="green"
+                                onClick={signalRunCode}
+                                disabled={!isConnected}
+                            >
                                 <svg
                                     className="w-4 h-4 mr-2"
                                     fill="currentColor"
@@ -425,6 +429,11 @@ export function PadPage() {
                                     });
                                 }
                             }}
+                            readOnly={!isConnected}
+                            readonlyOptions={{
+                                message: 'You are not connected to the pad',
+                                className: 'grayscale',
+                            }}
                         />
                     </div>
                 </div>
@@ -432,7 +441,7 @@ export function PadPage() {
                 <div className="flex-1 flex flex-col bg-dark-800 border-l border-dark-600">
                     <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
                         <h2 className="text-lg font-semibold text-dark-50">Output</h2>
-                        <Button variant="outline" onClick={clearOutput}>
+                        <Button variant="outline" onClick={clearOutput} disabled={!isConnected}>
                             <svg
                                 className="w-4 h-4 mr-2"
                                 fill="none"
@@ -451,7 +460,7 @@ export function PadPage() {
                     </div>
                     <div
                         data-testid="output"
-                        className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
+                        className={`flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm ${isConnected ? '' : 'grayscale'}`}
                     >
                         {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
                             <div
@@ -468,57 +477,66 @@ export function PadPage() {
             </div>
             {/* Footer */}
             <div className="flex grow-0 items-center justify-between px-6 py-3 bg-dark-800 border-t border-dark-600">
-                <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                        {usersWithoutMe.length === 0 && (
-                            <div className="text-sm text-gray-400">Just you here</div>
-                        )}
-                        {usersWithoutMe.slice(0, 10).map((user) => (
-                            <div className="flex items-center gap-2" key={user.id}>
-                                <div
-                                    className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
-                                ></div>
-                                <span className="text-sm text-dark-200">
-                                    {user.name} {user.id === pad?.ownerId ? '(Code runner)' : ''}
+                {isConnected ? (
+                    <>
+                        <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                                {usersWithoutMe.length === 0 && (
+                                    <div className="text-sm text-gray-400">Just you here</div>
+                                )}
+                                {usersWithoutMe.slice(0, 10).map((user) => (
+                                    <div className="flex items-center gap-2" key={user.id}>
+                                        <div
+                                            className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
+                                        ></div>
+                                        <span className="text-sm text-dark-200">
+                                            {user.name}{' '}
+                                            {user.id === pad?.ownerId ? '(Code runner)' : ''}
+                                        </span>
+                                    </div>
+                                ))}
+                                {usersWithoutMe.length > 10 && (
+                                    <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
+                                        +{usersWithoutMe.length - 3}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="username" className="text-sm text-dark-300">
+                                    Username:
+                                </label>
+                                <input
+                                    id="username"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => handleUsernameChange(e.target.value)}
+                                    className="px-2 py-1 text-sm bg-dark-600 border border-dark-500 rounded text-dark-50 focus:outline-none focus:border-blue-400"
+                                    placeholder="Guest"
+                                    maxLength={20}
+                                />
+                            </div>
+                            <div>
+                                <span className="text-sm text-dark-300">
+                                    {isConnected ? 'Connected' : 'Disconnected'}
+                                    {isOwner && isConnected && (
+                                        <span
+                                            className="ml-2 text-yellow-400"
+                                            title="You are the code executor"
+                                        >
+                                            👑
+                                        </span>
+                                    )}
                                 </span>
                             </div>
-                        ))}
-                        {usersWithoutMe.length > 10 && (
-                            <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
-                                +{usersWithoutMe.length - 3}
-                            </div>
-                        )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-sm text-red-400 m-auto">
+                        You are not connected to the pad, check your connection. Reconnecting...
                     </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="username" className="text-sm text-dark-300">
-                            Username:
-                        </label>
-                        <input
-                            id="username"
-                            type="text"
-                            value={username}
-                            onChange={(e) => handleUsernameChange(e.target.value)}
-                            className="px-2 py-1 text-sm bg-dark-600 border border-dark-500 rounded text-dark-50 focus:outline-none focus:border-blue-400"
-                            placeholder="Guest"
-                            maxLength={20}
-                        />
-                    </div>
-                    <div>
-                        <span className="text-sm text-dark-300">
-                            {isConnected ? 'Connected' : 'Disconnected'}
-                            {isOwner && isConnected && (
-                                <span
-                                    className="ml-2 text-yellow-400"
-                                    title="You are the code executor"
-                                >
-                                    👑
-                                </span>
-                            )}
-                        </span>
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );
