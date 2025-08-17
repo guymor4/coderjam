@@ -2,6 +2,7 @@ import { getLanguageCodeSample, Language, OutputEntry } from 'coderjam-shared';
 import db from './database.js';
 import { PadDB, PadStored } from './types.js';
 import {QueryResult} from "pg";
+import { logServerError } from './logger.js';
 
 const DEFAULT_LANGUAGE: Language= 'javascript';
 
@@ -57,8 +58,11 @@ export async function getPad(id: string): Promise<PadStored | undefined> {
     try {
         output = JSON.parse(padDB.output || '[]') as OutputEntry[];
     } catch (error) {
-        // Log and return an empty output
-        console.error('Failed to parse pad output:', error);
+        // Log and ignore
+        logServerError(error instanceof Error ? error : new Error(String(error)), {
+            event: 'get-pad',
+            padId: padDB.id,
+        })
     }
 
     return {

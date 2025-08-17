@@ -76,6 +76,11 @@ interface PadEditorProps {
     onRunClick: () => void;
     onClearOutput: () => void;
     onCursorChange?: (newCursor: User['cursor']) => void;
+    readOnly: boolean;
+    readonlyOptions?: {
+        message?: string;
+        className?: string;
+    };
 }
 
 export function PadEditor({
@@ -86,6 +91,8 @@ export function PadEditor({
     onClearOutput,
     onCodeChange: onCodeChangeOriginal,
     onCursorChange,
+    readOnly = false,
+    readonlyOptions,
 }: PadEditorProps) {
     const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | undefined>(undefined);
 
@@ -172,6 +179,7 @@ export function PadEditor({
             language={language}
             value={code}
             onChange={onCodeChange}
+            className={readOnly ? readonlyOptions?.className : ''}
             options={{
                 automaticLayout: true,
                 fontSize: 14,
@@ -190,6 +198,10 @@ export function PadEditor({
                 cursorStyle: 'line',
                 cursorWidth: 2,
                 wordWrap: 'off',
+                readOnly: readOnly,
+                readOnlyMessage: {
+                    value: readonlyOptions?.message ?? 'This pad is read-only',
+                },
             }}
         />
     );

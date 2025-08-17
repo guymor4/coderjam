@@ -3,36 +3,68 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createPad } from './padService.js';
+import { logger, logServerError } from './logger.js';
+import { isDevelopment, NODE_ENV, VITE_DEV_SERVER } from './common.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export function setupRoutes(app: express.Application): void {
-    const VITE_DEV_SERVER = process.env.VITE_DEV_SERVER || 'http://localhost:5173';
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-
-    // Health check endpoint
+    // Health check endpoint for load balancers
     app.get('/api/health', (_req, res) => {
         res.json({
             status: 'ok',
             timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV || 'development',
-            viteProxy: isDevelopment ? VITE_DEV_SERVER : 'disabled',
+            environment: NODE_ENV,
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            version: process.env.APP_VERSION || 'unknown',
         });
+    });
+
+    // Readiness probe - more comprehensive health check
+    app.get('/api/ready', async (_req, res) => {
+        try {
+            res.json({
+                status: 'ready',
+                timestamp: new Date().toISOString(),
+                checks: {
+                    server: 'ok',
+                },
+            });
+        } catch (error) {
+            logger.error('Readiness check failed:', error);
+            res.status(503).json({
+                status: 'not ready',
+                timestamp: new Date().toISOString(),
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
     });
 
     // -------------- API routes --------------
 
     // Create a new pad
-    app.post('/api/pad', async (_req, res) => {
+    app.post('/api/pad', async (req, res) => {
         try {
             const { id, key } = await createPad();
+            logger.info('Pad created', {
+                padId: id,
+                ip: req.ip,
+                userAgent: req.get('User-Agent'),
+                component: 'pad-service',
+            });
+
             res.json({
                 id,
                 key,
             });
         } catch (error) {
-            console.error('Error creating pad:', error);
+            logServerError(error instanceof Error ? error : new Error(String(error)), {
+                event: 'create-pad',
+                ip: req.ip,
+                component: 'pad-service',
+            });
             res.status(500).json({ error: 'Failed to create pad' });
         }
     });
@@ -68,13 +100,19 @@ export function setupRoutes(app: express.Application): void {
             return viteProxy(req, res, next);
         });
     } else {
-        // Production: Serve static files from React build
-        const frontendDistPath = path.join(__dirname, '../../public');
-        app.use(express.static(frontendDistPath));
+        // Production: Serve static files from public directory
+        const publicPath = path.join(__dirname, '../../public'); // that's the public directory *in the docker* (/app/public)
+        app.use(express.static(publicPath));
 
-        // Handle React Router routes
-        app.get('*', (_req, res) => {
-            res.sendFile(path.join(frontendDistPath, 'index.html'));
+        // Handle React Router routes (but not files with extensions)
+        app.get('*', (req, res) => {
+            // Don't serve index.html for files with extensions
+            if (path.extname(req.path)) {
+                res.status(404).send('File not found');
+                return;
+            }
+
+            res.sendFile(path.join(publicPath, 'index.html'));
         });
     }
 }

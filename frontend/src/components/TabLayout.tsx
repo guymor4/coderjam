@@ -14,7 +14,7 @@ export function TabLayout({ codeContent, outputContent }: TabLayoutProps) {
             <div className="flex bg-dark-800 border-b border-dark-600">
                 <button
                     onClick={() => setActiveTab('code')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`flex-1 px-3 md:px-4 py-3 text-sm font-medium transition-colors ${
                         activeTab === 'code'
                             ? 'bg-dark-700 text-dark-50 border-b-2 border-blue-400'
                             : 'text-dark-300 hover:text-dark-100 hover:bg-dark-750'
@@ -35,12 +35,13 @@ export function TabLayout({ codeContent, outputContent }: TabLayoutProps) {
                                 d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
                             />
                         </svg>
-                        Code
+                        <span className="hidden sm:inline">Code</span>
+                        <span className="sm:hidden">Code</span>
                     </div>
                 </button>
                 <button
                     onClick={() => setActiveTab('output')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`flex-1 px-3 md:px-4 py-3 text-sm font-medium transition-colors ${
                         activeTab === 'output'
                             ? 'bg-dark-700 text-dark-50 border-b-2 border-blue-400'
                             : 'text-dark-300 hover:text-dark-100 hover:bg-dark-750'
@@ -61,13 +62,14 @@ export function TabLayout({ codeContent, outputContent }: TabLayoutProps) {
                                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                         </svg>
-                        Output
+                        <span className="hidden sm:inline">Output</span>
+                        <span className="sm:hidden">Out</span>
                     </div>
                 </button>
             </div>
 
             {/* Tab Content */}
-            <div className="block flex-1 relative">
+            <div className="flex-1 relative overflow-hidden">
                 {activeTab === 'code' ? codeContent : outputContent}
             </div>
         </div>
