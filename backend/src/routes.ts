@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createPad } from './padService.js';
 import { logger, logServerError } from './logger.js';
-import { isDevelopment, NODE_ENV, VITE_DEV_SERVER } from './common.js';
+import { isDevelopment, NODE_ENV, validatePadId, VITE_DEV_SERVER } from './common.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,6 +72,22 @@ export function setupRoutes(app: express.Application): void {
     // Catch-all for unmatched API routes
     app.use('/api', (req, res) => {
         res.status(404).json({ error: 'API endpoint not found' });
+    });
+
+    // -------------- Session cookie middleware for pad routes --------------
+    // Set session cookie for pad routes to enable sticky sessions
+    app.use('/p/:padId', (req, res, next) => {
+        const padId = req.params.padId;
+        if (padId && validatePadId(padId)) {
+            // Set session cookie with pad ID for nginx consistent hashing
+            res.cookie('pad_session', padId, {
+                httpOnly: true,
+                secure: !isDevelopment, // Only secure in production
+                sameSite: 'lax',
+                maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            });
+        }
+        next();
     });
 
     if (isDevelopment) {
