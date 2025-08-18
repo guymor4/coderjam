@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RUNNERS } from './runners/runner';
 import { Select } from './components/Select';
 import { Button } from './components/Button';
+import { TabLayout } from './components/TabLayout';
+import { SideBySideLayout } from './components/SideBySideLayout';
+import { CollaborationBalloon, CollaborationToggle } from './components/CollaborationBalloon';
 import { useCollaboration } from './hooks/useCollaboration';
 import {
     BAD_KEY_ERROR,
@@ -16,6 +19,7 @@ import {
 } from 'coderjam-shared';
 import { getUserColorClassname } from './utils/userColors';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
+import useIsOnMobile from './hooks/useIsOnMobile';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -36,7 +40,9 @@ export function PadPage() {
     const [pad, setPad] = useState<PadRoom | undefined>(undefined);
     const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const [isCoderGradient, setIsCoderGradient] = useState<boolean>(true);
+    const [isCollaborationVisible, setIsCollaborationVisible] = useState<boolean>(false);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
+    const isOnMobile = useIsOnMobile();
 
     // Setup collaboration hook
     const { isConnected, userId, joinPad, leavePad, sendPadStateUpdate, sendRenameUpdate } =
@@ -197,6 +203,9 @@ export function PadPage() {
             return;
         }
 
+        // Switch to output tab on mobile when running code
+        // setActiveTab('output');
+
         sendPadStateUpdate({
             padId: pad.padId,
             isRunning: true,
@@ -314,230 +323,304 @@ export function PadPage() {
         );
     }
 
+    const LayoutComponent = isOnMobile ? TabLayout : SideBySideLayout;
+
     return (
         <div
             className="flex flex-col w-screen h-screen bg-dark-950 text-dark-100"
             data-testid="pad-loaded"
         >
-            <div className="flex grow">
-                {/* Left side panel: Pad editor and controls */}
-                <div className="flex-1 flex flex-col">
-                    <div className="flex grow-0 items-center justify-between px-6 py-4 bg-dark-800 border-b border-dark-600">
-                        <div className="flex items-center gap-4">
-                            <h1
-                                className="text-2xl font-semibold"
-                                onMouseLeave={() => setIsCoderGradient(true)}
-                            >
-                                <span
-                                    className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
-                                >
-                                    Coder
-                                </span>
-                                <span
-                                    className={`relative transition-all duration-300 text-dark-50 ${isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
-                                    onMouseEnter={() => setIsCoderGradient(false)}
-                                >
-                                    Coder
-                                </span>
-                                <span
-                                    className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
-                                >
-                                    Jam
-                                </span>
-                                <span
-                                    className={`relative transition-all duration-300 text-dark-50 ${!isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
-                                    onMouseEnter={() => setIsCoderGradient(true)}
-                                >
-                                    Jam
-                                </span>
-                            </h1>
-                            <div className="text-sm text-dark-300" data-testid="pad-id">
-                                {padId}
-                            </div>
-                            <Select
-                                value={pad.language || 'javascript'}
-                                onChange={changeLanguage}
-                                className="capitalize"
-                                data-testid="language-selector"
-                                disabled={initializingRunning || pad.isRunning || !isConnected}
-                                options={SUPPORTED_LANGUAGES.map((lang) => ({
-                                    value: lang,
-                                    label: capitalize(lang),
-                                    icon: (
-                                        <img
-                                            src={`/icons/${lang}.svg`}
-                                            alt={`${lang} icon`}
-                                            className="w-4 h-4"
-                                        />
-                                    ),
-                                }))}
-                            />
-                        </div>
-                        {initializingRunning || pad.isRunning ? (
-                            <Button disabled colorType="default">
-                                <svg
-                                    className="w-4 h-4 mr-2 animate-spin"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
-                                </svg>
-                                Running...
-                            </Button>
-                        ) : (
-                            <Button
-                                colorType="green"
-                                onClick={signalRunCode}
-                                disabled={!isConnected}
-                            >
-                                <svg
-                                    className="w-4 h-4 mr-2"
-                                    fill="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
-                                Run Code
-                            </Button>
-                        )}
-                    </div>
-                    <div className="flex-1 bg-dark-800">
-                        <PadEditor
-                            code={pad.code || ''}
-                            language={pad.language}
-                            users={usersWithoutMe}
-                            onCodeChange={changeCode}
-                            onRunClick={signalRunCode}
-                            onClearOutput={clearOutput}
-                            onCursorChange={(newCursor) => {
-                                if (pad) {
-                                    sendPadStateUpdate({
-                                        padId: pad.padId,
-                                        cursor: newCursor,
-                                    });
-                                }
-                            }}
-                            readOnly={!isConnected}
-                            readonlyOptions={{
-                                message: 'You are not connected to the pad',
-                                className: 'grayscale',
-                            }}
-                        />
+            {/* Header - responsive */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-dark-800 border-b border-dark-600">
+                <div className="flex items-center gap-2 md:gap-4 mb-2 md:mb-0">
+                    <h1
+                        className="text-xl md:text-2xl font-semibold"
+                        onMouseLeave={() => setIsCoderGradient(true)}
+                    >
+                        <span
+                            className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
+                        >
+                            Coder
+                        </span>
+                        <span
+                            className={`relative transition-all duration-300 text-dark-50 ${isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
+                            onMouseEnter={() => setIsCoderGradient(false)}
+                        >
+                            Coder
+                        </span>
+                        <span
+                            className={`absolute transition-all duration-300 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
+                        >
+                            Jam
+                        </span>
+                        <span
+                            className={`relative transition-all duration-300 text-dark-50 ${!isCoderGradient ? 'opacity-0' : 'opacity-100'}`}
+                            onMouseEnter={() => setIsCoderGradient(true)}
+                        >
+                            Jam
+                        </span>
+                    </h1>
+                    <div className="text-xs md:text-sm text-dark-300" data-testid="pad-id">
+                        {padId}
                     </div>
                 </div>
-                {/* Right side panel: Output display */}
-                <div className="flex-1 flex flex-col bg-dark-800 border-l border-dark-600">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
-                        <h2 className="text-lg font-semibold text-dark-50">Output</h2>
-                        <Button variant="outline" onClick={clearOutput} disabled={!isConnected}>
+                <div className="flex items-center gap-2 md:gap-4">
+                    <Select
+                        value={pad.language || 'javascript'}
+                        onChange={changeLanguage}
+                        className="capitalize text-sm"
+                        data-testid="language-selector"
+                        disabled={initializingRunning || pad.isRunning}
+                        options={SUPPORTED_LANGUAGES.map((lang) => ({
+                            value: lang,
+                            label: capitalize(lang),
+                            icon: (
+                                <img
+                                    src={`/icons/${lang}.svg`}
+                                    alt={`${lang} icon`}
+                                    className="w-4 h-4"
+                                />
+                            ),
+                        }))}
+                    />
+                    {initializingRunning || pad.isRunning ? (
+                        <Button disabled colorType="default" className="text-sm">
                             <svg
-                                className="w-4 h-4 mr-2"
+                                className="w-4 h-4 mr-2 animate-spin"
                                 fill="none"
-                                stroke="currentColor"
                                 viewBox="0 0 24 24"
                             >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                ></circle>
                                 <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
-                                />
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
                             </svg>
-                            Clear
+                            <span className="hidden sm:inline">Running...</span>
+                            <span className="sm:hidden">Run</span>
                         </Button>
-                    </div>
-                    <div
-                        data-testid="output"
-                        className={`flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm ${isConnected ? '' : 'grayscale'}`}
-                    >
-                        {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
+                    ) : (
+                        <Button colorType="green" onClick={signalRunCode} className="text-sm">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                            <span className="hidden sm:inline">Run Code</span>
+                            <span className="sm:hidden">Run</span>
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Main content area */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* SideBySide for Desktop and Tabs for Mobile */}
+                <LayoutComponent
+                    codeContent={
+                        <div className="h-full bg-dark-800">
+                            <PadEditor
+                                code={pad.code || ''}
+                                language={pad.language}
+                                users={usersWithoutMe}
+                                onCodeChange={changeCode}
+                                onRunClick={signalRunCode}
+                                onClearOutput={clearOutput}
+                                onCursorChange={(newCursor) => {
+                                    if (pad) {
+                                        sendPadStateUpdate({
+                                            padId: pad.padId,
+                                            cursor: newCursor,
+                                        });
+                                    }
+                                }}
+                                readOnly={!isConnected}
+                                readonlyOptions={{
+                                    message: 'You are not connected to the pad',
+                                    className: 'grayscale',
+                                }}
+                            />
+                        </div>
+                    }
+                    outputContent={
+                        <div className="flex flex-col h-full bg-dark-800">
+                            {!isOnMobile && (
+                                <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
+                                    <h2 className="text-lg font-semibold text-dark-50">Output</h2>
+                                    <Button variant="outline" onClick={clearOutput}>
+                                        <svg
+                                            className="w-4 h-4 mr-2"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
+                                            />
+                                        </svg>
+                                        Clear
+                                    </Button>
+                                </div>
+                            )}
                             <div
-                                key={index}
-                                className={`mb-1 ${
-                                    entry.type === 'error' ? 'text-red-400' : 'text-dark-100'
-                                }`}
+                                data-testid="output"
+                                className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
                             >
-                                {entry.text}
+                                {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
+                                    <div
+                                        key={index}
+                                        className={`mb-1 ${
+                                            entry.type === 'error'
+                                                ? 'text-red-400'
+                                                : 'text-dark-100'
+                                        }`}
+                                    >
+                                        {entry.text}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    }
+                />
+            </div>
+
+            {/* Desktop Footer */}
+            <div className="hidden md:flex grow-0 items-center justify-between px-6 py-3 bg-dark-800 border-t border-dark-600">
+                <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                        {usersWithoutMe.length === 0 && (
+                            <div className="text-sm text-gray-400">Just you here</div>
+                        )}
+                        {usersWithoutMe.slice(0, 10).map((user) => (
+                            <div className="flex items-center gap-2" key={user.id}>
+                                <div
+                                    className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
+                                ></div>
+                                <span className="text-sm text-dark-200">
+                                    {user.name} {user.id === pad?.ownerId ? '(Code runner)' : ''}
+                                </span>
                             </div>
                         ))}
+                        {usersWithoutMe.length > 10 && (
+                            <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
+                                +{usersWithoutMe.length - 10}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="username" className="text-sm text-dark-300">
+                            Username:
+                        </label>
+                        <input
+                            id="username"
+                            type="text"
+                            value={username}
+                            onChange={(e) => handleUsernameChange(e.target.value)}
+                            className="px-2 py-1 text-sm bg-dark-600 border border-dark-500 rounded text-dark-50 focus:outline-none focus:border-blue-400"
+                            placeholder="Guest"
+                            maxLength={20}
+                        />
+                    </div>
+                    <div>
+                        <span className="text-sm text-dark-300">
+                            {isConnected ? 'Connected' : 'Disconnected'}
+                            {isOwner && isConnected && (
+                                <span
+                                    className="ml-2 text-yellow-400"
+                                    title="You are the code executor"
+                                >
+                                    👑
+                                </span>
+                            )}
+                        </span>
                     </div>
                 </div>
             </div>
-            {/* Footer */}
-            <div className="flex grow-0 items-center justify-between px-6 py-3 bg-dark-800 border-t border-dark-600">
-                {isConnected ? (
-                    <>
-                        <div className="flex items-center gap-2">
-                            <div className="flex gap-1">
-                                {usersWithoutMe.length === 0 && (
-                                    <div className="text-sm text-gray-400">Just you here</div>
-                                )}
-                                {usersWithoutMe.slice(0, 10).map((user) => (
-                                    <div className="flex items-center gap-2" key={user.id}>
-                                        <div
-                                            className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
-                                        ></div>
-                                        <span className="text-sm text-dark-200">
-                                            {user.name}{' '}
-                                            {user.id === pad?.ownerId ? '(Code runner)' : ''}
-                                        </span>
-                                    </div>
-                                ))}
-                                {usersWithoutMe.length > 10 && (
-                                    <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
-                                        +{usersWithoutMe.length - 3}
-                                    </div>
-                                )}
-                            </div>
+
+            {/* Mobile: Collaboration balloon and toggle */}
+            <CollaborationToggle
+                userCount={usersWithoutMe.length}
+                isConnected={isConnected}
+                onClick={() => setIsCollaborationVisible(true)}
+            />
+            <CollaborationBalloon
+                isVisible={isCollaborationVisible}
+                onClose={() => setIsCollaborationVisible(false)}
+                userCount={usersWithoutMe.length}
+            >
+                <>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="flex gap-1 flex-wrap">
+                            {usersWithoutMe.length === 0 && (
+                                <div className="text-sm text-gray-400">Just you here</div>
+                            )}
+                            {usersWithoutMe.slice(0, 10).map((user) => (
+                                <div
+                                    className="flex items-center gap-2 bg-dark-700 px-2 py-1 rounded"
+                                    key={user.id}
+                                >
+                                    <div
+                                        className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
+                                    ></div>
+                                    <span className="text-sm text-dark-200">
+                                        {user.name} {user.id === pad?.ownerId ? '👑' : ''}
+                                    </span>
+                                </div>
+                            ))}
+                            {usersWithoutMe.length > 10 && (
+                                <div className="w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-xs text-dark-300">
+                                    +{usersWithoutMe.length - 10}
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="username" className="text-sm text-dark-300">
-                                    Username:
-                                </label>
-                                <input
-                                    id="username"
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => handleUsernameChange(e.target.value)}
-                                    className="px-2 py-1 text-sm bg-dark-600 border border-dark-500 rounded text-dark-50 focus:outline-none focus:border-blue-400"
-                                    placeholder="Guest"
-                                    maxLength={20}
-                                />
-                            </div>
-                            <div>
-                                <span className="text-sm text-dark-300">
-                                    {isConnected ? 'Connected' : 'Disconnected'}
-                                    {isOwner && isConnected && (
-                                        <span
-                                            className="ml-2 text-yellow-400"
-                                            title="You are the code executor"
-                                        >
-                                            👑
-                                        </span>
-                                    )}
-                                </span>
-                            </div>
-                        </div>
-                    </>
-                ) : (
-                    <div className="text-sm text-red-400 m-auto">
-                        You are not connected to the pad, check your connection. Reconnecting...
                     </div>
-                )}
-            </div>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-2">
+                            <label htmlFor="username-mobile" className="text-sm text-dark-300">
+                                Username:
+                            </label>
+                            <input
+                                id="username-mobile"
+                                type="text"
+                                value={username}
+                                onChange={(e) => handleUsernameChange(e.target.value)}
+                                className="px-3 py-2 text-sm bg-dark-600 border border-dark-500 rounded text-dark-50 focus:outline-none focus:border-blue-400"
+                                placeholder="Guest"
+                                maxLength={20}
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div
+                                className={`w-3 h-3 rounded-full ${
+                                    isConnected ? 'bg-green-400' : 'bg-red-400'
+                                }`}
+                            />
+                            <span className="text-sm text-dark-300">
+                                {isConnected ? 'Connected' : 'Disconnected'}
+                                {isOwner && isConnected && (
+                                    <span
+                                        className="ml-2 text-yellow-400"
+                                        title="You are the code executor"
+                                    >
+                                        👑
+                                    </span>
+                                )}
+                            </span>
+                        </div>
+                    </div>
+                </>
+            </CollaborationBalloon>
         </div>
     );
 }
