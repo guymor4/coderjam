@@ -1,4 +1,5 @@
-[![Unit Tests](https://github.com/guymor4/coderjam/actions/workflows/unit-tests.yaml/badge.svg?branch=main)](https://github.com/guymor4/coderjam/actions/workflows/unit-tests.yaml)
+[![coderjam.com](https://img.shields.io/website?url=https%3A%2F%2Fcoderjam.com&label=coderjam.com&link=https%3A%2F%2Fcoderjam.com)](https://coderjam.com)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/guymor4/coderjam/unit-tests.yaml)](https://github.com/guymor4/coderjam/actions/workflows/unit-tests.yaml)
 
 # CoderJam
 A modern web playground that allows you to run code in different programming languages directly in your browser.
