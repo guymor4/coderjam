@@ -21,13 +21,7 @@ Every language runs in its own isolated wasm environment, ensuring security and 
 - Docker and Docker Compose (for PostgreSQL database)
 
 ### Installation
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd coderjam
-```
-
-2. Install all dependencies:
+Install all dependencies:
 ```bash
 make install
 ```
@@ -35,7 +29,7 @@ make install
 ### Development
 To run both frontend and backend in development mode:
 
-1. Start the PostgreSQL database:
+1. Start a local PostgreSQL database:
 ```bash
 docker-compose up -d
 ```
@@ -57,7 +51,3 @@ For production, we build frontend and backend into a single container and docker
 # Build and start production server (+ PostgreSQL)
 docker-compose -f docker-compose.prod.yaml up --build
 ```
-
-## License
-
-MIT License - see LICENSE file for details
