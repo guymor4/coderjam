@@ -94,6 +94,9 @@ export function main(): void {
             version: process.env.APP_VERSION || 'unknown',
             component: 'startup',
         });
+        console.log('----------------------------------------');
+        console.log(`Access the server at http://localhost:${PORT}`);
+        console.log('----------------------------------------');
     });
 }
 

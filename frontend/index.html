@@ -70,6 +70,9 @@
         <script type="module" src="/src/main.tsx"></script>
         <!-- Buy me coffee close button -->
         <script type="application/javascript" >
+            // Add close button to Buy Me A Coffee widget
+            // In mobile view, do not show the close button
+
             async function waitForBMCWidget() {
                 return new Promise((resolve) => {
                     const observer = new MutationObserver(() => {
@@ -83,34 +86,34 @@
                 });
             }
 
-            waitForBMCWidget().then((bmcWidget) => {
-                const widgetSize = bmcWidget.getBoundingClientRect();
-                // Create bounding box to capture hover events
-                const bwcBoundingBox = document.createElement("div");
-                bwcBoundingBox.id = "bmc-bounding-box";
-                bwcBoundingBox.style.top = `${widgetSize.top + widgetSize.height / 2}px`;
-                bwcBoundingBox.style.left = `${widgetSize.left + widgetSize.width / 2}px`;
-                document.body.appendChild(bwcBoundingBox);
+            // exit if mobile
+            if (window.innerWidth > 768) {
+                waitForBMCWidget().then((bmcWidget) => {
+                    const widgetSize = bmcWidget.getBoundingClientRect();
+                    // Create bounding box to capture hover events
+                    const bwcBoundingBox = document.createElement("div");
+                    bwcBoundingBox.id = "bmc-bounding-box";
+                    bwcBoundingBox.style.top = `${widgetSize.top + widgetSize.height / 2}px`;
+                    bwcBoundingBox.style.left = `${widgetSize.left + widgetSize.width / 2}px`;
+                    document.body.appendChild(bwcBoundingBox);
 
-                console.log(bwcBoundingBox)
+                    // Create close button
+                    const closeButton = document.createElement("div");
+                    closeButton.id = "bmc-close-button";
+                    closeButton.innerHTML = "Close";
 
-                // Create close button
-                const closeButton = document.createElement("div");
-                closeButton.id = "bmc-close-button";
-                closeButton.innerHTML = "Close";
-
-                closeButton.addEventListener("click", () => {
-                    const bmcIframe = document.getElementById("bmc-iframe");
-                    if (bmcIframe) {
-                        bmcIframe.style.display = "none";
-                    }
-                    bmcWidget.style.display = "none";
-                    bwcBoundingBox.style.display = "none";
-                    closeButton.style.display = "none";
+                    closeButton.addEventListener("click", () => {
+                        const bmcIframe = document.getElementById("bmc-iframe");
+                        if (bmcIframe) {
+                            bmcIframe.style.display = "none";
+                        }
+                        bmcWidget.style.display = "none";
+                        bwcBoundingBox.style.display = "none";
+                        closeButton.style.display = "none";
+                    });
+                    bwcBoundingBox.appendChild(closeButton);
                 });
-                bwcBoundingBox.appendChild(closeButton);
-
-            });
+            }
         </script>
     </body>
 </html>
