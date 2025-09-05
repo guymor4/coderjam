@@ -60,7 +60,7 @@ type Process = {
 };
 
 const GO_WASM_URL = `/go.wasm`;
-const USER_CODE_FILENAME = '/userCode.go'; // Must be in root directory
+const USER_CODE_FILENAME = '/code.go'; // Must be in root directory
 const O_CREAT = 0x40; // Create file if it does not exist
 const O_TRUNC = 0x200; // Truncate file to zero length
 const O_WRONLY = 0x1; // Write only

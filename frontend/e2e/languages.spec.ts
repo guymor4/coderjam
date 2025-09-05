@@ -18,17 +18,17 @@ console.log(greet('World'));`,
         code: 'print("Python works!")',
         expectedOutput: 'Python works!',
     },
-    // TODO enable Go tests when Go support is ready
-    //     go: {
-    //         code: `package main
-    //
-    // import "fmt"
-    //
-    // func main() {
-    //     fmt.Println("Go works!")
-    // }`,
-    //         expectedOutput: 'Go works!',
-    //     },
+    go: {
+        code: `
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Go works!")
+}`,
+        expectedOutput: 'Go works!',
+    },
 };
 
 const getRunButton = (page: Page) => page.getByRole('button', { name: /run/i }).first();
@@ -77,18 +77,16 @@ test.describe('Language Execution Tests', () => {
     }
     // Test each language for basic functionality
     Object.entries(LANGUAGE_TEST_DATA).forEach(([language, testData]) => {
-        test(`should execute ${language} code without throwing errors`, async ({ page }) => {
+        test(`${language} - run sample code`, async ({ page }) => {
             await setupPageAndWaitForLoad(page);
 
             try {
                 await switchLanguage(page, language);
 
-                // Find and interact with editor
+                // Clear and enter test code
                 const editor = page.locator('.monaco-editor').first();
                 await editor.click();
-
-                // Clear and enter test code
-                await page.keyboard.press('Control+a'); // Select all
+                await page.keyboard.press('Control+KeyA'); // Select all
                 await page.keyboard.insertText(testData.code);
 
                 // Find and click run button
@@ -125,7 +123,7 @@ test.describe('Language Execution Tests', () => {
             await switchLanguage(page, lang);
 
             const outputText = await page.locator('[data-testid="output"]').textContent();
-            expect(outputText.length).toBeGreaterThan(0);
+            expect(outputText?.length ?? 0).toBeGreaterThan(0);
             expect(outputText).not.toContain('Error');
             expect(outputText).not.toContain('error');
             expect(outputText).not.toContain('Exception');
