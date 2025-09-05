@@ -21,11 +21,18 @@ help:
 	@echo "  docker-prod-push - Build and push production images"
 
 # Install dependencies for all packages
-install:
-	@echo "📦 Installing dependencies for all packages..."
+install-dependencies:
+	@echo "Installing dependencies for all packages..."
 	cd shared && yarn install && yarn build # also build to avoid type errors in IDEs
 	cd frontend && yarn install
 	cd backend && yarn install
+
+download-pyodide-packages:
+	@echo "Downloading Pyodide packages to frontend/public/pyodide/"
+	cd frontend/public && curl -L -o pyodide.tar.bz2 https://github.com/pyodide/pyodide/releases/download/0.28.0/pyodide-0.28.0.tar.bz2 && tar -xjf pyodide.tar.bz2 && rm pyodide.tar.bz2
+
+install: install-dependencies download-pyodide-packages
+	@echo "✅ All dependencies installed."
 
 # Run development environment
 dev:
