@@ -96,7 +96,6 @@ const init: Runner['init'] = async () => {
         fs: window.fs,
         // @ts-expect-error dynamically imported js
         hackpad: window.hackpad,
-
     };
 
     console.log('Creating /bin and /home/me directories...');
@@ -117,11 +116,11 @@ const init: Runner['init'] = async () => {
 
     // Upload go zip to FS (with indexed db)
     // We need to wait until progress is 100 to be sure we are ready
-    await new Promise<void>(resolve =>
+    await new Promise<void>((resolve) =>
         singletonGo!.hackpad.overlayTarGzip('/usr/local/go', '/go.gzip', {
             persist: true,
             skipCacheDirs: ['/usr/local/go/pkg/mod', '/usr/local/go/pkg/tool/js_wasm'],
-            progress: progress => progress === 100 ? resolve() : undefined,
+            progress: (progress) => (progress === 100 ? resolve() : undefined),
         })
     );
 
