@@ -60,7 +60,7 @@ type Process = {
 };
 
 const GO_WASM_URL = `/go.wasm`;
-const USER_CODE_FILENAME = '/userCode.go'; // Must be in root directory
+const USER_CODE_FILENAME = '/code.go'; // Must be in root directory
 const O_CREAT = 0x40; // Create file if it does not exist
 const O_TRUNC = 0x200; // Truncate file to zero length
 const O_WRONLY = 0x1; // Write only
@@ -119,6 +119,7 @@ const init: Runner['init'] = async () => {
     // We need to wait until progress is 100 to be sure we are ready
     await new Promise<void>(resolve =>
         singletonGo!.hackpad.overlayTarGzip('/usr/local/go', '/go.gzip', {
+            persist: true,
             skipCacheDirs: ['/usr/local/go/pkg/mod', '/usr/local/go/pkg/tool/js_wasm'],
             progress: progress => progress === 100 ? resolve() : undefined,
         })
