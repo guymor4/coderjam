@@ -60,7 +60,7 @@ type Process = {
 };
 
 const GO_WASM_URL = `/go.wasm`;
-const USER_CODE_FILENAME = '/userCode.go'; // Must be in root directory
+const USER_CODE_FILENAME = '/code.go'; // Must be in root directory
 const O_CREAT = 0x40; // Create file if it does not exist
 const O_TRUNC = 0x200; // Truncate file to zero length
 const O_WRONLY = 0x1; // Write only
@@ -74,21 +74,6 @@ function isReady(): boolean {
 }
 
 const init: Runner['init'] = async () => {
-    try {
-        await getGo();
-        return await runGoCommand(['version'], false);
-    } catch (errRaw: unknown) {
-        const err = errRaw as Error;
-        console.error('Error initializing Go environment:', err);
-        return { output: [{ type: 'error', text: String(err.message) }] };
-    }
-};
-
-async function getGo(): Promise<Go> {
-    if (singletonGo) {
-        return singletonGo;
-    }
-
     await import(window.location.origin + '/wasm_exec.js');
     // @ts-expect-error dynamically imported js
     const goJsWrapper = new window.Go();
@@ -127,17 +112,31 @@ async function getGo(): Promise<Go> {
         mode: 0o700,
     });
 
-    await singletonGo.hackpad.overlayTarGzip('/usr/local/go', '/go.gzip', {
-        persist: true,
-        skipCacheDirs: ['/usr/local/go/pkg/mod', '/usr/local/go/pkg/tool/js_wasm'],
-    });
+    console.log('Initializing Go environment, this may take a while...');
 
-    // Run "go version" to actually wait until we can run commands in the Go environment
-    await runGoCommand(['version'], false);
+    // Upload go zip to FS (with indexed db)
+    // We need to wait until progress is 100 to be sure we are ready
+    await new Promise<void>((resolve) =>
+        singletonGo!.hackpad.overlayTarGzip('/usr/local/go', '/go.gzip', {
+            persist: true,
+            skipCacheDirs: ['/usr/local/go/pkg/mod', '/usr/local/go/pkg/tool/js_wasm'],
+            progress: (progress) => (progress === 100 ? resolve() : undefined),
+        })
+    );
 
-    console.log('Done setting up Go environment.');
+    console.log('Go init complete');
 
-    return singletonGo;
+    return await runGoCommand(['version'], false);
+};
+
+async function getGo(): Promise<Go> {
+    if (singletonGo) {
+        return singletonGo;
+    }
+
+    console.warn('Go environment is UNEXPECTEDLY not ready, initializing...');
+    await init();
+    return singletonGo!;
 }
 
 async function runCode(code: string): Promise<RunResult> {
