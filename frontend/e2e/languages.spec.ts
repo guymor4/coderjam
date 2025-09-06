@@ -18,24 +18,25 @@ console.log(greet('World'));`,
         code: 'print("Python works!")',
         expectedOutput: 'Python works!',
     },
-    // TODO enable Go tests when Go support is ready
-    //     go: {
-    //         code: `package main
-    //
-    // import "fmt"
-    //
-    // func main() {
-    //     fmt.Println("Go works!")
-    // }`,
-    //         expectedOutput: 'Go works!',
-    //     },
+    go: {
+        code: `
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Go works!")
+}`,
+        expectedOutput: 'Go works!',
+    },
 };
 
-const getRunButton = (page: Page) => page.getByRole('button', { name: /run/i }).first();
-const getLanguageSelect = (page: Page) =>
-    page.locator('[data-testid="language-selector"] button').first();
+const runButtonLocator = (page: Page) => page.getByRole('button', { name: /run/i });
 const getLanguageOption = (languageSelect: Locator, language: string) =>
     languageSelect.locator('..').locator(`button:has-text("${language}")`).last();
+
+// Get language selector and wait for it to be enabled
+const languageSelectLocator = (page: Page) => page.locator('[data-testid="language-selector"] button');
 
 test.describe('Language Execution Tests', () => {
     async function setupPageAndWaitForLoad(page: Page) {
@@ -66,35 +67,41 @@ test.describe('Language Execution Tests', () => {
             timeout: 15000,
         });
 
-        const languageSelector = getLanguageSelect(page);
+        const languageSelector = languageSelectLocator(page);
         await expect(languageSelector).toBeEnabled();
         await languageSelector.click();
         await page.waitForTimeout(500); // Wait for dropdown to open
 
         await getLanguageOption(languageSelector, language).click();
 
-        await expect(languageSelector).toBeEnabled();
+        await expect(languageSelector).toBeEnabled({
+            timeout: 60000 // it's disabled until the runner is ready
+        });
     }
     // Test each language for basic functionality
     Object.entries(LANGUAGE_TEST_DATA).forEach(([language, testData]) => {
-        test(`should execute ${language} code without throwing errors`, async ({ page }) => {
+        test(`${language} - run sample code`, async ({ page }) => {
+            test.setTimeout(120_000); // Extend timeout for slow tests
+
             await setupPageAndWaitForLoad(page);
 
             try {
                 await switchLanguage(page, language);
 
-                // Find and interact with editor
+                // Clear and enter test code
                 const editor = page.locator('.monaco-editor').first();
                 await editor.click();
-
-                // Clear and enter test code
-                await page.keyboard.press('Control+a'); // Select all
+                await page.keyboard.press('Control+KeyA'); // Select all
                 await page.keyboard.insertText(testData.code);
 
                 // Find and click run button
-                const runButton = getRunButton(page);
-                await runButton.click();
-                await expect(runButton).toBeEnabled({ timeout: 3000 });
+                const runButton = runButtonLocator(page);
+                await runButton.click({
+                    timeout: 60000 // it's disabled until the code run is finished
+                });
+                await expect(runButton).toBeEnabled({
+                    timeout: 120000 // it's disabled until the code run is finished
+                });
                 // Wait for execution to complete
 
                 // Check page content for output or error indicators
@@ -115,17 +122,18 @@ test.describe('Language Execution Tests', () => {
         });
     });
 
-    test('should handle rapid language switching without errors', async ({ page }) => {
+    test('rapid language switching without errors', async ({ page }) => {
         await setupPageAndWaitForLoad(page);
 
         const languages = Object.keys(LANGUAGE_TEST_DATA);
 
         // Rapidly switch between languages
+        // DO NOT wait for initialization to complete, only check no errors in output
         for (const lang of languages) {
             await switchLanguage(page, lang);
 
             const outputText = await page.locator('[data-testid="output"]').textContent();
-            expect(outputText.length).toBeGreaterThan(0);
+            expect(outputText?.length ?? 0).toBeGreaterThan(0);
             expect(outputText).not.toContain('Error');
             expect(outputText).not.toContain('error');
             expect(outputText).not.toContain('Exception');
