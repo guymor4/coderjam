@@ -132,7 +132,6 @@ export function PadPage() {
             // should be overridden
             let initOutput: OutputEntry[] = [{ type: 'log', text: 'No output from runner init' }];
             try {
-                console.log('Running running run...');
                 setInitializingRunning(true);
                 changeOutput([
                     {
