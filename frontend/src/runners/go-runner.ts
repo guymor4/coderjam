@@ -69,6 +69,10 @@ const allPermissions = 0o777; // All permissions
 let singletonGo: Go | undefined = undefined;
 let cmd: WebAssembly.WebAssemblyInstantiatedSource;
 
+function postprocessOutput(output: OutputEntry[]): OutputEntry[] {
+    return output.filter(entry => entry.text !== '# command-line-arguments');
+}
+
 function isReady(): boolean {
     return singletonGo !== undefined;
 }
@@ -175,7 +179,8 @@ async function runCode(code: string): Promise<RunResult> {
     }
 
     // Run the Go code using the child process
-    return await runGoCommand(['run', USER_CODE_FILENAME]);
+    const runOutput = await runGoCommand(['run', USER_CODE_FILENAME]);
+    return { ...runOutput, output: postprocessOutput(runOutput.output) };
 }
 
 async function runGoCommand(args: string[], printExitCode: boolean = true): Promise<RunResult> {
@@ -211,4 +216,4 @@ async function runGoCommand(args: string[], printExitCode: boolean = true): Prom
 }
 
 // noinspection JSUnusedGlobalSymbols
-export default { init, runCode, runGoCommand, isReady };
+export default { init, runCode, isReady };
