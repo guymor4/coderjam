@@ -1,12 +1,12 @@
 import { Navigate, useParams } from 'react-router-dom';
-import { PadEditor } from './components/PadEditor';
+import { PadEditor } from './PadEditor';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RUNNERS } from './runners/runner';
-import { Button } from './components/Button';
-import { TabLayout } from './components/TabLayout';
-import { SideBySideLayout } from './components/SideBySideLayout';
-import { CollaborationBalloon, CollaborationToggle } from './components/CollaborationBalloon';
-import { useCollaboration } from './hooks/useCollaboration';
+import { RUNNERS } from '../runners/runner';
+import { Button } from './Button';
+import { TabLayout } from './TabLayout';
+import { SideBySideLayout } from './SideBySideLayout';
+import { CollaborationBalloon, CollaborationToggle } from './CollaborationBalloon';
+import { useCollaboration } from '../hooks/useCollaboration';
 import {
     BAD_KEY_ERROR,
     getLanguageCodeSample,
@@ -15,15 +15,16 @@ import {
     type PadRoom,
     SUPPORTED_LANGUAGES,
 } from 'coderjam-shared';
-import { getUserColorClassname } from './utils/userColors';
-import { useLocalStorageState } from './hooks/useLocalStorageState';
-import useIsOnMobile from './hooks/useIsOnMobile';
-import { Header } from './components/Header';
+import { getUserColorClassname } from '../utils/userColors';
+import { useLocalStorageState } from '../hooks/useLocalStorageState';
+import useIsOnMobile from '../hooks/useIsOnMobile';
+import { Header } from './Header';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
 ];
-const CLEAN_OUTPUT: OutputEntry[] = [{ type: 'log', text: 'Output cleared.' }];
+// Output entries that will be set when clearing output
+const CLEAN_OUTPUT: OutputEntry[] = [];
 
 export function PadPage() {
     const { padId } = useParams<{ padId: string }>();
