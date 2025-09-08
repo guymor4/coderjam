@@ -39,10 +39,10 @@ export function PadPage() {
     const [pad, setPad] = useState<PadRoom | undefined>(undefined);
     const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const [isCollaborationVisible, setIsCollaborationVisible] = useState<boolean>(false);
-    const [stickToBottom, setStickToBottom] = useLocalStorageState<boolean>(
-        'stick_to_bottom',
-        true
-    );
+    const [autoScrolling, setAutoScrolling] = useLocalStorageState<boolean>('auto_scrolling', true);
+    // Ref to track if the next scroll to bottom event should be ignored
+    // We want the autoscrolling to enable/disable when the user scrolls but we don't want to trigger it when we auto scroll
+    const ignoreNextScrollEvent = useRef<boolean>(false);
     const outputContainerRef = useRef<HTMLDivElement>(null);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
     const isOnMobile = useIsOnMobile();
@@ -280,13 +280,51 @@ export function PadPage() {
 
     // Auto-scroll to bottom when output changes and stick to bottom is enabled
     useEffect(() => {
-        if (stickToBottom && outputContainerRef.current) {
+        if (
+            autoScrolling &&
+            outputContainerRef.current &&
+            !isScrolledToBottom(outputContainerRef.current)
+        ) {
+            ignoreNextScrollEvent.current = true;
             outputContainerRef.current.scroll({
                 top: outputContainerRef.current.scrollHeight,
                 behavior: 'smooth',
             });
         }
-    }, [pad?.output, stickToBottom]);
+    }, [pad?.output, autoScrolling]);
+
+    // Enable / disable auto-scrolling when the user scrolls
+    const handleOutputScroll = useCallback(
+        (ev: Event) => {
+            const target = ev.target as HTMLElement;
+            const isAtBottom = isScrolledToBottom(target);
+
+            // exit early if should ignore scroll event
+            // if we are at the bottom, the scroll event is done and we should not longer ignore scroll events
+            if (ignoreNextScrollEvent.current) {
+                if (isAtBottom) {
+                    // Done scrolling, reset ignore flag
+                    ignoreNextScrollEvent.current = false;
+                }
+                return;
+            }
+
+            setAutoScrolling(isAtBottom);
+        },
+        [setAutoScrolling]
+    );
+
+    useEffect(() => {
+        if (!outputContainerRef.current) {
+            return;
+        }
+        const outputContainer = outputContainerRef.current;
+
+        outputContainer.addEventListener('scroll', handleOutputScroll);
+        return () => {
+            outputContainer.removeEventListener('scroll', handleOutputScroll);
+        };
+    }, [handleOutputScroll]);
 
     const handleUsernameChange = useCallback(
         (newUsername: string) => {
@@ -396,15 +434,8 @@ export function PadPage() {
                                     <h2 className="text-lg font-semibold text-dark-50">Output</h2>
                                     <div className="flex gap-2">
                                         <Button
-                                            variant={stickToBottom ? 'default' : 'outline'}
-                                            onClick={() => setStickToBottom(!stickToBottom)}
-                                            tooltip={{
-                                                text: stickToBottom
-                                                    ? 'Unstick output'
-                                                    : 'Stick output to bottom',
-                                                delay: 1000,
-                                                direction: 'bottom',
-                                            }}
+                                            variant={autoScrolling ? 'default' : 'outline'}
+                                            onClick={() => setAutoScrolling(!autoScrolling)}
                                         >
                                             <svg
                                                 className="w-4 h-4"
@@ -598,4 +629,9 @@ export function PadPage() {
             </CollaborationBalloon>
         </div>
     );
+}
+function isScrolledToBottom(target: HTMLElement) {
+    const scrollTop = target.scrollTop;
+    const scrollTopMax = target.scrollHeight - target.clientHeight;
+    return scrollTop === scrollTopMax;
 }
