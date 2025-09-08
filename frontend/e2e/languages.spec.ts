@@ -36,7 +36,8 @@ const getLanguageOption = (languageSelect: Locator, language: string) =>
     languageSelect.locator('..').locator(`button:has-text("${language}")`).last();
 
 // Get language selector and wait for it to be enabled
-const languageSelectLocator = (page: Page) => page.locator('[data-testid="language-selector"] button');
+const languageSelectLocator = (page: Page) =>
+    page.locator('[data-testid="language-selector"] button');
 
 test.describe('Language Execution Tests', () => {
     async function setupPageAndWaitForLoad(page: Page) {
@@ -75,7 +76,7 @@ test.describe('Language Execution Tests', () => {
         await getLanguageOption(languageSelector, language).click();
 
         await expect(languageSelector).toBeEnabled({
-            timeout: 60000 // it's disabled until the runner is ready
+            timeout: 60000, // it's disabled until the runner is ready
         });
     }
     // Test each language for basic functionality
@@ -97,10 +98,10 @@ test.describe('Language Execution Tests', () => {
                 // Find and click run button
                 const runButton = runButtonLocator(page);
                 await runButton.click({
-                    timeout: 60000 // it's disabled until the code run is finished
+                    timeout: 60000, // it's disabled until the code run is finished
                 });
                 await expect(runButton).toBeEnabled({
-                    timeout: 120000 // it's disabled until the code run is finished
+                    timeout: 120000, // it's disabled until the code run is finished
                 });
                 // Wait for execution to complete
 
