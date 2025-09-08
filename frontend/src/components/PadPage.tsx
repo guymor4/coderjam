@@ -1,6 +1,6 @@
 import { Navigate, useParams } from 'react-router-dom';
 import { PadEditor } from './PadEditor';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RUNNERS } from '../runners/runner';
 import { Button } from './Button';
 import { TabLayout } from './TabLayout';
@@ -40,6 +40,11 @@ export function PadPage() {
     const [pad, setPad] = useState<PadRoom | undefined>(undefined);
     const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const [isCollaborationVisible, setIsCollaborationVisible] = useState<boolean>(false);
+    const [autoScrolling, setAutoScrolling] = useLocalStorageState<boolean>('auto_scrolling', true);
+    // Ref to track if the next scroll to bottom event should be ignored
+    // We want the autoscrolling to enable/disable when the user scrolls but we don't want to trigger it when we auto scroll
+    const ignoreNextScrollEvent = useRef<boolean>(false);
+    const outputContainerRef = useRef<HTMLDivElement>(null);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
     const isOnMobile = useIsOnMobile();
 
@@ -274,6 +279,54 @@ export function PadPage() {
         changeOutput(CLEAN_OUTPUT);
     }, [changeOutput]);
 
+    // Auto-scroll to bottom when output changes and stick to bottom is enabled
+    useEffect(() => {
+        if (
+            autoScrolling &&
+            outputContainerRef.current &&
+            !isScrolledToBottom(outputContainerRef.current)
+        ) {
+            ignoreNextScrollEvent.current = true;
+            outputContainerRef.current.scroll({
+                top: outputContainerRef.current.scrollHeight,
+                behavior: 'smooth',
+            });
+        }
+    }, [pad?.output, autoScrolling]);
+
+    // Enable / disable auto-scrolling when the user scrolls
+    const handleOutputScroll = useCallback(
+        (ev: Event) => {
+            const target = ev.target as HTMLElement;
+            const isAtBottom = isScrolledToBottom(target);
+
+            // exit early if should ignore scroll event
+            // if we are at the bottom, the scroll event is done and we should not longer ignore scroll events
+            if (ignoreNextScrollEvent.current) {
+                if (isAtBottom) {
+                    // Done scrolling, reset ignore flag
+                    ignoreNextScrollEvent.current = false;
+                }
+                return;
+            }
+
+            setAutoScrolling(isAtBottom);
+        },
+        [setAutoScrolling]
+    );
+
+    useEffect(() => {
+        if (!outputContainerRef.current) {
+            return;
+        }
+        const outputContainer = outputContainerRef.current;
+
+        outputContainer.addEventListener('scroll', handleOutputScroll);
+        return () => {
+            outputContainer.removeEventListener('scroll', handleOutputScroll);
+        };
+    }, [handleOutputScroll]);
+
     const handleUsernameChange = useCallback(
         (newUsername: string) => {
             if (!pad) {
@@ -380,25 +433,52 @@ export function PadPage() {
                             {!isOnMobile && (
                                 <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
                                     <h2 className="text-lg font-semibold text-dark-50">Output</h2>
-                                    <Button variant="outline" onClick={clearOutput}>
-                                        <svg
-                                            className="w-4 h-4 mr-2"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant={autoScrolling ? 'default' : 'outline'}
+                                            onClick={() => setAutoScrolling(!autoScrolling)}
                                         >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
-                                            />
-                                        </svg>
-                                        Clear
-                                    </Button>
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M19 12l-7 7m0 0l-7-7m7 7V3"
+                                                />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M5 23h14"
+                                                />
+                                            </svg>
+                                        </Button>
+                                        <Button variant="outline" onClick={clearOutput}>
+                                            <svg
+                                                className="w-4 h-4 mr-2"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
+                                                />
+                                            </svg>
+                                            Clear
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                             <div
+                                ref={outputContainerRef}
                                 data-testid="output"
                                 className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
                             >
@@ -551,4 +631,9 @@ export function PadPage() {
             </CollaborationBalloon>
         </div>
     );
+}
+function isScrolledToBottom(target: HTMLElement) {
+    const scrollTop = target.scrollTop;
+    const scrollTopMax = target.scrollHeight - target.clientHeight;
+    return scrollTop === scrollTopMax;
 }
