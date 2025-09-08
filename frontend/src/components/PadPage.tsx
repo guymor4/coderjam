@@ -403,7 +403,8 @@ export function PadPage() {
                                 className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
                             >
                                 {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
-                                    <div
+                                    // <pre> for preserving line breaks and spacing
+                                    <pre
                                         key={index}
                                         className={`mb-1 ${
                                             entry.type === 'error'
@@ -412,7 +413,7 @@ export function PadPage() {
                                         }`}
                                     >
                                         {entry.text}
-                                    </div>
+                                    </pre>
                                 ))}
                             </div>
                         </div>
