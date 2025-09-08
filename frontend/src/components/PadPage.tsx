@@ -1,12 +1,12 @@
 import { Navigate, useParams } from 'react-router-dom';
-import { PadEditor } from './components/PadEditor';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RUNNERS } from './runners/runner';
-import { Button } from './components/Button';
-import { TabLayout } from './components/TabLayout';
-import { SideBySideLayout } from './components/SideBySideLayout';
-import { CollaborationBalloon, CollaborationToggle } from './components/CollaborationBalloon';
-import { useCollaboration } from './hooks/useCollaboration';
+import { PadEditor } from './PadEditor';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RUNNERS } from '../runners/runner';
+import { Button } from './Button';
+import { TabLayout } from './TabLayout';
+import { SideBySideLayout } from './SideBySideLayout';
+import { CollaborationBalloon, CollaborationToggle } from './CollaborationBalloon';
+import { useCollaboration } from '../hooks/useCollaboration';
 import {
     BAD_KEY_ERROR,
     getLanguageCodeSample,
@@ -15,10 +15,10 @@ import {
     type PadRoom,
     SUPPORTED_LANGUAGES,
 } from 'coderjam-shared';
-import { getUserColorClassname } from './utils/userColors';
-import { useLocalStorageState } from './hooks/useLocalStorageState';
-import useIsOnMobile from './hooks/useIsOnMobile';
-import { Header } from './components/Header';
+import { getUserColorClassname } from '../utils/userColors';
+import { useLocalStorageState } from '../hooks/useLocalStorageState';
+import useIsOnMobile from '../hooks/useIsOnMobile';
+import { Header } from './Header';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -39,6 +39,11 @@ export function PadPage() {
     const [pad, setPad] = useState<PadRoom | undefined>(undefined);
     const [username, setUsername] = useLocalStorageState<string>('username', 'Guest');
     const [isCollaborationVisible, setIsCollaborationVisible] = useState<boolean>(false);
+    const [stickToBottom, setStickToBottom] = useLocalStorageState<boolean>(
+        'stick_to_bottom',
+        true
+    );
+    const outputContainerRef = useRef<HTMLDivElement>(null);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
     const isOnMobile = useIsOnMobile();
 
@@ -273,6 +278,16 @@ export function PadPage() {
         changeOutput(CLEAN_OUTPUT);
     }, [changeOutput]);
 
+    // Auto-scroll to bottom when output changes and stick to bottom is enabled
+    useEffect(() => {
+        if (stickToBottom && outputContainerRef.current) {
+            outputContainerRef.current.scroll({
+                top: outputContainerRef.current.scrollHeight,
+                behavior: 'smooth',
+            });
+        }
+    }, [pad?.output, stickToBottom]);
+
     const handleUsernameChange = useCallback(
         (newUsername: string) => {
             if (!pad) {
@@ -379,25 +394,59 @@ export function PadPage() {
                             {!isOnMobile && (
                                 <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
                                     <h2 className="text-lg font-semibold text-dark-50">Output</h2>
-                                    <Button variant="outline" onClick={clearOutput}>
-                                        <svg
-                                            className="w-4 h-4 mr-2"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant={stickToBottom ? 'default' : 'outline'}
+                                            onClick={() => setStickToBottom(!stickToBottom)}
+                                            tooltip={{
+                                                text: stickToBottom
+                                                    ? 'Unstick output'
+                                                    : 'Stick output to bottom',
+                                                delay: 1000,
+                                                direction: 'bottom',
+                                            }}
                                         >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
-                                            />
-                                        </svg>
-                                        Clear
-                                    </Button>
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M19 12l-7 7m0 0l-7-7m7 7V3"
+                                                />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M5 23h14"
+                                                />
+                                            </svg>
+                                        </Button>
+                                        <Button variant="outline" onClick={clearOutput}>
+                                            <svg
+                                                className="w-4 h-4 mr-2"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"
+                                                />
+                                            </svg>
+                                            Clear
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                             <div
+                                ref={outputContainerRef}
                                 data-testid="output"
                                 className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
                             >
