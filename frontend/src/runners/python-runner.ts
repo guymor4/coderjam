@@ -44,8 +44,8 @@ async function runCode(code: string): Promise<RunResult> {
     });
 
     const outputEntries: OutputEntry[] = [];
-    const addStdout = (text: string) => outputEntries.push({ text, type: 'log' });
-    const addStderr = (text: string) => outputEntries.push({ text, type: 'error' });
+    const addStdout = (text: string) => outputEntries.push({ text: text, type: 'log' });
+    const addStderr = (text: string) => outputEntries.push({ text: text, type: 'error' });
     pyodide.setStdout({ batched: addStdout });
     pyodide.setStderr({ batched: addStderr });
     try {
@@ -53,10 +53,10 @@ async function runCode(code: string): Promise<RunResult> {
     } catch (errRaw: unknown) {
         const err = errRaw as Error;
         console.error('Pyodide error:', err);
-        outputEntries.push({
-            text: `${err.name}: ${err.message}`,
-            type: 'error',
-        });
+            outputEntries.push({
+                text: err.message,
+                type: 'error',
+            });
     }
     pyodide.setStdout({});
     pyodide.setStderr({});
