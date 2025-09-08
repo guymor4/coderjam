@@ -23,7 +23,8 @@ import { Header } from './Header';
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
 ];
-const CLEAN_OUTPUT: OutputEntry[] = [{ type: 'log', text: 'Output cleared.' }];
+// Output entries that will be set when clearing output
+const CLEAN_OUTPUT: OutputEntry[] = [];
 
 export function PadPage() {
     const { padId } = useParams<{ padId: string }>();
@@ -482,7 +483,8 @@ export function PadPage() {
                                 className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
                             >
                                 {(pad.output ?? INITIAL_OUTPUT)?.map((entry, index) => (
-                                    <div
+                                    // <pre> for preserving line breaks and spacing
+                                    <pre
                                         key={index}
                                         className={`mb-1 ${
                                             entry.type === 'error'
@@ -491,7 +493,7 @@ export function PadPage() {
                                         }`}
                                     >
                                         {entry.text}
-                                    </div>
+                                    </pre>
                                 ))}
                             </div>
                         </div>
