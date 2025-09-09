@@ -70,7 +70,7 @@ let singletonGo: Go | undefined = undefined;
 let cmd: WebAssembly.WebAssemblyInstantiatedSource;
 
 function postprocessOutput(output: OutputEntry[]): OutputEntry[] {
-    return output.filter(entry => entry.text !== '# command-line-arguments');
+    return output.filter((entry) => entry.text !== '# command-line-arguments');
 }
 
 function isReady(): boolean {
