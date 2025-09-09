@@ -596,7 +596,8 @@ export function PadPage() {
                                         className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
                                     ></div>
                                     <span className="text-sm text-dark-200">
-                                        {user.name} {user.id === pad?.ownerId ? '(code executor)' : ''}
+                                        {user.name}{' '}
+                                        {user.id === pad?.ownerId ? '(code executor)' : ''}
                                     </span>
                                 </div>
                             ))}
