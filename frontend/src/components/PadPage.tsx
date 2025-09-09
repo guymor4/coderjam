@@ -19,6 +19,7 @@ import { getUserColorClassname } from '../utils/userColors';
 import { useLocalStorageState } from '../hooks/useLocalStorageState';
 import useIsOnMobile from '../hooks/useIsOnMobile';
 import { Header } from './Header';
+import { Tooltip } from './Tooltip';
 
 const INITIAL_OUTPUT: OutputEntry[] = [
     { type: 'log', text: 'Code execution results will be displayed here.' },
@@ -44,7 +45,7 @@ export function PadPage() {
     // Ref to track if the next scroll to bottom event should be ignored
     // We want the autoscrolling to enable/disable when the user scrolls but we don't want to trigger it when we auto scroll
     const ignoreNextScrollEvent = useRef<boolean>(false);
-    const outputContainerRef = useRef<HTMLDivElement>(null);
+    const [outputContainer, setOutputContainer] = useState<HTMLDivElement | null>(null);
     const currentRunner = pad ? RUNNERS[pad.language] : undefined;
     const isOnMobile = useIsOnMobile();
 
@@ -281,51 +282,53 @@ export function PadPage() {
 
     // Auto-scroll to bottom when output changes and stick to bottom is enabled
     useEffect(() => {
-        if (
-            autoScrolling &&
-            outputContainerRef.current &&
-            !isScrolledToBottom(outputContainerRef.current)
-        ) {
+        if (autoScrolling && outputContainer && !isScrolledToBottom(outputContainer)) {
             ignoreNextScrollEvent.current = true;
-            outputContainerRef.current.scroll({
-                top: outputContainerRef.current.scrollHeight,
+            outputContainer.scroll({
+                top: outputContainer.scrollHeight,
                 behavior: 'smooth',
             });
         }
-    }, [pad?.output, autoScrolling]);
+    }, [pad?.output, autoScrolling, outputContainer]);
 
     // Enable / disable auto-scrolling when the user scrolls
     const handleOutputScroll = useCallback(
         (ev: Event) => {
             const target = ev.target as HTMLElement;
             const isAtBottom = isScrolledToBottom(target);
+            console.log('Output scroll event');
 
             // exit early if should ignore scroll event
             // if we are at the bottom, the scroll event is done and we should not longer ignore scroll events
             if (ignoreNextScrollEvent.current) {
                 if (isAtBottom) {
                     // Done scrolling, reset ignore flag
+                    console.log('Done scrolling, resetting ignore flag');
                     ignoreNextScrollEvent.current = false;
                 }
+                console.log('Ignoring scroll event');
                 return;
             }
 
+            console.log('Setting auto-scrolling to:', isAtBottom);
             setAutoScrolling(isAtBottom);
         },
         [setAutoScrolling]
     );
 
     useEffect(() => {
-        if (!outputContainerRef.current) {
+        if (!outputContainer) {
+            console.error('No output container found');
             return;
         }
-        const outputContainer = outputContainerRef.current;
+
+        console.log('Output container found:', outputContainer);
 
         outputContainer.addEventListener('scroll', handleOutputScroll);
         return () => {
             outputContainer.removeEventListener('scroll', handleOutputScroll);
         };
-    }, [handleOutputScroll]);
+    }, [handleOutputScroll, outputContainer]);
 
     const handleUsernameChange = useCallback(
         (newUsername: string) => {
@@ -434,30 +437,40 @@ export function PadPage() {
                                 <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
                                     <h2 className="text-lg font-semibold text-dark-50">Output</h2>
                                     <div className="flex gap-2">
-                                        <Button
-                                            variant={autoScrolling ? 'default' : 'outline'}
-                                            onClick={() => setAutoScrolling(!autoScrolling)}
+                                        <Tooltip
+                                            text={
+                                                autoScrolling
+                                                    ? 'Auto-scrolling is enabled'
+                                                    : 'Auto-scrolling is disabled'
+                                            }
+                                            delay={200}
+                                            direction="bottom"
                                         >
-                                            <svg
-                                                className="w-4 h-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
+                                            <Button
+                                                variant={autoScrolling ? 'default' : 'outline'}
+                                                onClick={() => setAutoScrolling(!autoScrolling)}
                                             >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M19 12l-7 7m0 0l-7-7m7 7V3"
-                                                />
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M5 23h14"
-                                                />
-                                            </svg>
-                                        </Button>
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M19 12l-7 7m0 0l-7-7m7 7V3"
+                                                    />
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M5 23h14"
+                                                    />
+                                                </svg>
+                                            </Button>
+                                        </Tooltip>
                                         <Button variant="outline" onClick={clearOutput}>
                                             <svg
                                                 className="w-4 h-4 mr-2"
@@ -478,7 +491,7 @@ export function PadPage() {
                                 </div>
                             )}
                             <div
-                                ref={outputContainerRef}
+                                ref={(ref) => setOutputContainer(ref)}
                                 data-testid="output"
                                 className="flex-1 p-4 bg-dark-900 overflow-y-auto font-mono text-sm"
                             >
@@ -514,7 +527,7 @@ export function PadPage() {
                                     className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
                                 ></div>
                                 <span className="text-sm text-dark-200">
-                                    {user.name} {user.id === pad?.ownerId ? '(Code runner)' : ''}
+                                    {user.name} {user.id === pad?.ownerId ? '(Code executor)' : ''}
                                 </span>
                             </div>
                         ))}
@@ -540,19 +553,20 @@ export function PadPage() {
                             maxLength={20}
                         />
                     </div>
-                    <div>
+                    <Tooltip
+                        text={
+                            isOwner
+                                ? 'You are the code executor of this pad'
+                                : isConnected
+                                  ? 'You are connected to the server'
+                                  : 'You are not connected to the server'
+                        }
+                    >
                         <span className="text-sm text-dark-300">
                             {isConnected ? 'Connected' : 'Disconnected'}
-                            {isOwner && isConnected && (
-                                <span
-                                    className="ml-2 text-yellow-400"
-                                    title="You are the code executor"
-                                >
-                                    👑
-                                </span>
-                            )}
+                            {isOwner && isConnected && ' (Code executor)'}
                         </span>
-                    </div>
+                    </Tooltip>
                 </div>
             </div>
 
@@ -582,7 +596,8 @@ export function PadPage() {
                                         className={`w-2 h-2 rounded-full flex items-center justify-center bg-current ${getUserColorClassname(user.name)}`}
                                     ></div>
                                     <span className="text-sm text-dark-200">
-                                        {user.name} {user.id === pad?.ownerId ? '👑' : ''}
+                                        {user.name}{' '}
+                                        {user.id === pad?.ownerId ? '(code executor)' : ''}
                                     </span>
                                 </div>
                             ))}

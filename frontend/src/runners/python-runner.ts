@@ -53,10 +53,10 @@ async function runCode(code: string): Promise<RunResult> {
     } catch (errRaw: unknown) {
         const err = errRaw as Error;
         console.error('Pyodide error:', err);
-            outputEntries.push({
-                text: err.message,
-                type: 'error',
-            });
+        outputEntries.push({
+            text: err.message,
+            type: 'error',
+        });
     }
     pyodide.setStdout({});
     pyodide.setStderr({});
