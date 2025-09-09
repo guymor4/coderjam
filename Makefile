@@ -1,6 +1,6 @@
 # Coderjam Makefile
 
-.PHONY: help install dev build clean test lint type-check
+.PHONY: help install dev build clean test test-e2e lint type-check
 
 # Default target
 help:
@@ -9,7 +9,8 @@ help:
 	@echo "  dev         - Start development environment (frontend + backend)"
 	@echo "  build       - Build all packages for production"
 	@echo "  clean       - Clean build artifacts from all packages"
-	@echo "  test        - Run tests for all packages"
+	@echo "  test        - Run Unit tests for all packages"
+	@echo "  test-e2e    - Run end-to-end tests"
 	@echo "  lint        - Run linter for all packages"
 	@echo "  type-check  - Run type checking for all packages"
 	@echo ""
@@ -57,7 +58,13 @@ clean:
 # Test all packages
 test:
 	@echo "🧪 Running tests for all packages..."
+# only frontend for now
 	cd frontend && yarn test
+
+# Run end-to-end tests
+test-e2e:
+	@echo "🧪 Running end-to-end tests..."
+	cd frontend && yarn test:e2e
 
 # Lint all packages
 lint:
