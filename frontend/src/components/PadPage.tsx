@@ -437,37 +437,40 @@ export function PadPage() {
                                 <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
                                     <h2 className="text-lg font-semibold text-dark-50">Output</h2>
                                     <div className="flex gap-2">
-                                        <Button
-                                            variant={autoScrolling ? 'default' : 'outline'}
-                                            onClick={() => setAutoScrolling(!autoScrolling)}
-                                            tooltip={{
-                                                text: autoScrolling
+                                        <Tooltip
+                                            text={
+                                                autoScrolling
                                                     ? 'Auto-scrolling is enabled'
-                                                    : 'Auto-scrolling is disabled',
-                                                delay: 200,
-                                                direction: 'bottom',
-                                            }}
+                                                    : 'Auto-scrolling is disabled'
+                                            }
+                                            delay={200}
+                                            direction="bottom"
                                         >
-                                            <svg
-                                                className="w-4 h-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
+                                            <Button
+                                                variant={autoScrolling ? 'default' : 'outline'}
+                                                onClick={() => setAutoScrolling(!autoScrolling)}
                                             >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M19 12l-7 7m0 0l-7-7m7 7V3"
-                                                />
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M5 23h14"
-                                                />
-                                            </svg>
-                                        </Button>
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M19 12l-7 7m0 0l-7-7m7 7V3"
+                                                    />
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M5 23h14"
+                                                    />
+                                                </svg>
+                                            </Button>
+                                        </Tooltip>
                                         <Button variant="outline" onClick={clearOutput}>
                                             <svg
                                                 className="w-4 h-4 mr-2"

@@ -1,22 +1,14 @@
 import React, { useRef } from 'react';
-import { Tooltip } from './Tooltip';
 
 interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
     variant?: 'default' | 'outline';
     colorType?: 'default' | 'green' | 'red';
-    tooltip?: {
-        text: string;
-        // Tooltip delay in milliseconds
-        delay?: number;
-        direction?: 'top' | 'bottom';
-    };
     children: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
     variant = 'default',
     colorType = 'default',
-    tooltip,
     children,
     className = '',
     ...props
@@ -43,10 +35,8 @@ export const Button: React.FC<ButtonProps> = ({
     const buttonClasses = `${baseClasses} ${variantClasses[variant][colorType]} ${className}`;
 
     return (
-        <Tooltip text={tooltip?.text} delay={tooltip?.delay} direction={tooltip?.direction}>
-            <button ref={buttonRef} className={buttonClasses} {...props}>
-                {children}
-            </button>
-        </Tooltip>
+        <button ref={buttonRef} className={buttonClasses} {...props}>
+            {children}
+        </button>
     );
 };
