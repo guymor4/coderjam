@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 
 interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
     variant?: 'default' | 'outline';
@@ -13,7 +13,6 @@ export const Button: React.FC<ButtonProps> = ({
     className = '',
     ...props
 }) => {
-    const buttonRef = useRef<HTMLButtonElement>(null);
     const baseClasses =
         'py-2.5 px-4 rounded-lg transition-all duration-200 inline-flex items-center justify-center font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-950';
 
@@ -35,7 +34,7 @@ export const Button: React.FC<ButtonProps> = ({
     const buttonClasses = `${baseClasses} ${variantClasses[variant][colorType]} ${className}`;
 
     return (
-        <button ref={buttonRef} className={buttonClasses} {...props}>
+        <button className={buttonClasses} {...props}>
             {children}
         </button>
     );
