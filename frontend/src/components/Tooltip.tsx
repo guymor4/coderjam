@@ -57,7 +57,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
                 className={`
                 absolute left-1/2 transform -translate-x-1/2 w-max
                 ${direction === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'}
-                ${shown ? 'opacity-100' : 'opacity-0'}
+                ${shown ? 'opacity-100' : 'opacity-0 pointer-events-none'}
                 bg-dark-500 text-xs rounded py-1 px-2 z-10
                 transition-opacity duration-200`}
             >
